@@ -6,6 +6,7 @@ import { checkGrounding, checkUserInput, collectToolAmounts, SCOPE_DECLINE, type
 import { beginTurn, viewCart, type CartView } from "./cart";
 
 export const MAX_STEPS = 8;
+export const MAX_OUTPUT_TOKENS = 1200; // generous for a short reply plus a reasoning model's thinking
 
 /** The primary model id (first entry of MODEL_CHAIN, or MODEL_ID). */
 export function getModelId(): string {
@@ -28,6 +29,9 @@ export function agentConfig(sessionId: string, promptVersion: PromptVersion = ge
     system: getSystemPrompt(promptVersion),
     tools: buildTools(sessionId),
     stopWhen: isStepCount(MAX_STEPS),
+    // Replies are short. Capping output also shrinks what Groq reserves against its tokens-per-minute limit
+    // (it counts input + max output per request), so more turns fit in the free tier.
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
   };
 }
 

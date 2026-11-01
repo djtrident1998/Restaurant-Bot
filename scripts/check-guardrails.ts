@@ -19,6 +19,8 @@ check("real dish ok", checkGrounding("Try **Dal Makhani** (₹260)").ok);
 check("bold emphasis not a dish", checkGrounding("It contains **dairy and nuts**. **Status:** **Received**").ok);
 check("Chicken 65 flagged", checkGrounding("Try our **Chicken 65**!").badDishes.length === 1);
 check("order id bold ok", checkGrounding("**Order ID:** **SR-1234**").ok);
+check("narrow no-break spaces in a real dish name ok", checkGrounding("**Hara Bhara Kebab** ₹240").ok);
+check("bold 'Order ID: SR-1234' ok", checkGrounding("**Order ID: SR-6954**").ok);
 check("non-breaking hyphen category ok", checkGrounding("**Non‑Veg Mains**").ok);
 check("Rs. format parsed", !checkGrounding("It costs Rs. 999").ok);
 

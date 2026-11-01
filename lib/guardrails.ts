@@ -66,14 +66,18 @@ function isTitleCase(p: string): boolean {
 
 // Models emit typographic punctuation (non-breaking hyphens, curly quotes); compare on plain ASCII.
 export function normalizeText(s: string): string {
-  return s.replace(/[‐-―−]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/ /g, " ");
+  return s
+    .replace(/[‐-―−]/g, "-")
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[   -​  　]/g, " "); // non-breaking / narrow / thin spaces some models emit
 }
 
 function isKnownDishPhrase(p: string): boolean {
   p = normalizeText(p);
   const l = p.toLowerCase().replace(/[.:,]+$/, "").trim();
   if (menuNames.has(l) || categoryNames.has(l) || LABELS.has(l)) return true;
-  if (/₹/.test(l) || /^[\d\s×x.,]+$/.test(l) || /^sr-\d+$/i.test(l)) return true; // amounts, quantities, order ids
+  if (/₹/.test(l) || /^[\d\s×x.,]+$/.test(l) || /\bsr-\d+\b/i.test(l)) return true; // amounts, quantities, order ids ("Order ID: SR-1234")
   // Bold used for emphasis ("dairy and nuts") is not a dish name; dish names are Title Case.
   if (!isTitleCase(p.replace(/[.:,]+$/, ""))) return true;
   for (const n of menuNames) if (n.includes(l) || l.includes(n)) return true;
