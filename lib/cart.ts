@@ -122,6 +122,38 @@ export function findOrder(sessionId: string, orderId: string): Order | undefined
   return session(sessionId).orders.find((o) => o.id.toLowerCase() === orderId.trim().toLowerCase());
 }
 
+export interface SessionSnapshot {
+  qty: [string, number][];
+  orders: Order[];
+  version: number;
+  readBackVersion: number;
+  confirmedVersion: number;
+  readBackTurn: number;
+}
+
+/** Copy of everything a turn can change, so a failed model attempt can be rolled back before another model retries. */
+export function snapshotSession(sessionId: string): SessionSnapshot {
+  const s = session(sessionId);
+  return {
+    qty: [...s.qty],
+    orders: [...s.orders],
+    version: s.version,
+    readBackVersion: s.readBackVersion,
+    confirmedVersion: s.confirmedVersion,
+    readBackTurn: s.readBackTurn,
+  };
+}
+
+export function restoreSession(sessionId: string, snap: SessionSnapshot): void {
+  const s = session(sessionId);
+  s.qty = new Map(snap.qty);
+  s.orders = [...snap.orders];
+  s.version = snap.version;
+  s.readBackVersion = snap.readBackVersion;
+  s.confirmedVersion = snap.confirmedVersion;
+  s.readBackTurn = snap.readBackTurn;
+}
+
 export function resetSession(sessionId: string): void {
   sessions.delete(sessionId);
 }

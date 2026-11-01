@@ -3,7 +3,7 @@ import { agentConfig } from "@/lib/agent";
 import { streamWithFailover } from "@/lib/failover";
 import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
-import { beginTurn, viewCart } from "@/lib/cart";
+import { beginTurn, restoreSession, snapshotSession, viewCart } from "@/lib/cart";
 import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 60;
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
   if (candidates.length === 0) return Response.json({ error: "No AI provider is configured." }, { status: 503 });
 
   beginTurn(sessionId);
+  const snapshot = snapshotSession(sessionId);
   const modelMessages = await convertToModelMessages(messages);
 
   // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
@@ -73,9 +74,13 @@ export async function POST(req: Request) {
               },
             }).toUIMessageStream(),
           (chunk) => writer.write(chunk as Parameters<typeof writer.write>[0]),
-          (c, e) => {
-            markFailed(c, Date.now(), cooldownFor(e));
-            console.warn(`[failover] ${c.provider}:${c.id} failed, trying next`, String(e).slice(0, 200));
+          {
+            // A failed attempt may already have added to the cart etc.; roll back so the next model starts clean.
+            beforeAttempt: () => restoreSession(sessionId, snapshot),
+            onFail: (c, e) => {
+              markFailed(c, Date.now(), cooldownFor(e));
+              console.warn(`[failover] ${c.provider}:${c.id} failed, trying next`, String(e).slice(0, 200));
+            },
           },
         );
       },

@@ -3,6 +3,8 @@ import { MockLanguageModelV4 } from "ai/test";
 import { streamText } from "ai";
 import { parseChain, availableCandidates, markFailed, clearCooldowns, cooldownFor, type Candidate } from "../lib/models";
 import { streamWithFailover } from "../lib/failover";
+import { beginTurn, restoreSession, snapshotSession, viewCart } from "../lib/cart";
+import { addToCartTool } from "../lib/tools";
 
 let fails = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -62,7 +64,7 @@ async function run(models: Record<string, ReturnType<typeof goodModel>>, candida
     candidates,
     (c) => streamText({ model: models[c.provider], prompt: "hi", maxRetries: 0, onError: () => {} }).toUIMessageStream() as AsyncIterable<{ type: string }>,
     (chunk) => out.push(chunk as never),
-    (c) => failed.push(c.provider),
+    { onFail: (c) => failed.push(c.provider) },
   );
   return { winner, failed, text: out.filter((c) => c.type === "text-delta").map((c) => c.delta).join(""), out };
 }
@@ -80,6 +82,45 @@ async function run(models: Record<string, ReturnType<typeof goodModel>>, candida
 
   r = await run({ groq: rateLimited(), google: rateLimited(), anthropic: rateLimited() }, chain);
   check("all fail -> friendly error chunk", r.winner === null && r.out.some((c) => c.type === "error" && /busy/i.test(c.errorText ?? "")));
+
+  // A model that starts answering and then fails MID-stream (e.g. rate limit on step 2 of a tool turn).
+  const failsMidway = () =>
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: new ReadableStream({
+          start(ctrl) {
+            for (const p of [
+              { type: "stream-start", warnings: [] },
+              { type: "text-start", id: "1" },
+              { type: "text-delta", id: "1", delta: "partial-from-groq " },
+              { type: "error", error: new Error("429 Rate limit on tokens per minute (TPM)") },
+            ] as never[]) ctrl.enqueue(p);
+            ctrl.close();
+          },
+        }),
+      }),
+    });
+  r = await run({ groq: failsMidway(), google: goodModel("from google"), anthropic: goodModel("from haiku") }, chain);
+  check("mid-stream failure -> next model, no partial text leaks", r.winner?.provider === "google" && r.text === "from google" && r.failed.join() === "groq", JSON.stringify(r.text));
+
+  // Side effects of a failed attempt are rolled back before the next model retries (no double add_to_cart).
+  const SID = "failover-rollback-test";
+  beginTurn(SID);
+  const snap = snapshotSession(SID);
+  const attempts: string[] = [];
+  const winner = await streamWithFailover(
+    chain,
+    (c) => (async function* () {
+      attempts.push(c.provider);
+      addToCartTool(SID, { itemId: "st-01", qty: 2 }); // side effect inside the attempt
+      if (c.provider === "groq") yield { type: "error", errorText: "429 on step 2" };
+      else yield { type: "text-delta", delta: "ok" };
+    })(),
+    () => {},
+    { beforeAttempt: () => restoreSession(SID, snap) },
+  );
+  check("failed attempt rolled back: cart has exactly 2, not 4", winner?.provider === "google" && viewCart(SID).total === 560 && viewCart(SID).itemCount === 2, `total ${viewCart(SID).total}`);
+  check("attempt order groq then google", attempts.join() === "groq,google");
 
   process.exit(fails ? 1 : 0);
 })();
