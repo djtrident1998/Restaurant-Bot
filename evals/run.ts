@@ -107,7 +107,7 @@ async function runCase(c: Case, version: PromptVersion): Promise<CaseResult> {
   let lastCart = { total: 0 };
 
   for (let turn of c.turns) {
-    // "[confirm] ..." simulates the customer pressing the UI's "Yes, place order" button (POST /api/confirm).
+    // "[confirm] ..." simulates the customer pressing the UI's "Yes, place order" button (PUT /api/chat).
     if (turn.startsWith("[confirm] ")) {
       userConfirm(sessionId);
       turn = "Yes, place the order";

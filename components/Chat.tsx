@@ -83,14 +83,18 @@ export function Chat() {
     const names = last.parts.filter(isToolUIPart).map(getToolName);
     const text = last.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ");
     const readBack = names.includes("get_cart") || /place (this|the|your) order/i.test(text);
-    return readBack && !names.includes("place_order") && cart.lines.length > 0;
+    // Only a SUCCESSFUL place_order ends the confirmation step; a refused attempt (e.g. a typed "yes") must not hide the button.
+    const placed = last.parts.some(
+      (p) => isToolUIPart(p) && getToolName(p) === "place_order" && p.state === "output-available" && (p.output as { ok?: boolean } | undefined)?.ok === true,
+    );
+    return readBack && !placed && cart.lines.length > 0;
   }, [messages, busy, cart]);
 
   const confirmOrder = async () => {
     if (!sessionId || busy) return;
     try {
-      const r = await fetch("/api/confirm", {
-        method: "POST",
+      const r = await fetch("/api/chat", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId }),
       });

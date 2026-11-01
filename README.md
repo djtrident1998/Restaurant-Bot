@@ -38,7 +38,7 @@ Free models go first, paid Haiku last. If a model fails before answering (rate l
 ```
 Browser (chat + cart) → POST /api/chat → input gate → Claude (tools + system prompt)
                                           ├ search_menu · add_to_cart · get_cart
-                                          └ place_order (needs the customer's button press, /api/confirm) · order_status
+                                          └ place_order (needs the customer's button press, PUT /api/chat) · order_status
                          → streamed reply + tool results → menu cards / cart / order card
 ```
 `lib/agent.ts` is shared by the API route and the eval runner, so evals test real behaviour.

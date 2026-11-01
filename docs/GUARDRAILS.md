@@ -5,7 +5,7 @@ Each guardrail lists **where it is enforced** (prompt vs code) and **how it is t
 | # | Guardrail | Enforced in code | Prompt | Tested by |
 |---|---|---|---|---|
 | 1 | Grounding | `lib/tools.ts` (only source of menu data), `lib/guardrails.ts#checkGrounding` | "never invent" | `scripts/check-guardrails.ts`, eval *grounding rate* |
-| 2 | Confirm-before-order | `lib/tools.ts#placeOrderTool`, `lib/cart.ts#userConfirm`, `app/api/confirm/route.ts` (UI button) | read-back rules | `scripts/check-tools.ts`, eval *order safety* |
+| 2 | Confirm-before-order | `lib/tools.ts#placeOrderTool`, `lib/cart.ts#userConfirm`, `PUT /api/chat` (UI button) | read-back rules | `scripts/check-tools.ts`, eval *order safety* |
 | 3 | Honest "no" | tools return empty results for unknown dishes | "say so + alternatives" | eval *honest-no* cases |
 | 4 | Scope limit | `lib/guardrails.ts#checkUserInput` (pre-model gate) | scope section | eval *off-topic* cases |
 | 5 | Deterministic math | `lib/cart.ts#viewCart` | "never calculate" | eval *cart/total correctness* |
@@ -20,7 +20,7 @@ Each guardrail lists **where it is enforced** (prompt vs code) and **how it is t
 `place_order` refuses unless **all** hold:
 1. `confirmed: true` is passed;
 2. the cart is non-empty; **and**
-3. the customer pressed the **"Yes, place order" button** for the *current* cart. The button calls `POST /api/confirm`, which records consent server-side (`lib/cart.ts#userConfirm`). It is not a model tool, so no model can confirm on the customer's behalf. Any cart change afterwards invalidates it.
+3. the customer pressed the **"Yes, place order" button** for the *current* cart. The button calls `PUT /api/chat`, which records consent server-side (`lib/cart.ts#userConfirm`). It shares the chat route on purpose: on Vercel each route is a separate serverless function with separate memory, and the in-memory session lives with the chat route (a first version used its own `/api/confirm` route and always saw an empty cart in production). It is not a model tool, so no model can confirm on the customer's behalf. Any cart change afterwards invalidates it.
 
 Why a button and not "the model saw a yes": evals and a live test showed that weaker (free) models treat "place my order" or even their own earlier read-back as consent, and `confirmed: true` is just a flag the model sets. Consent now has to come from a real click. Consequence: typing "yes" is not enough — the waiter tells the customer to tap the button. Refusal messages are written for the model so it recovers gracefully.
 

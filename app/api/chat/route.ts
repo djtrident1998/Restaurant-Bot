@@ -3,7 +3,7 @@ import { agentConfig } from "@/lib/agent";
 import { streamWithFailover } from "@/lib/failover";
 import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
-import { beginTurn, restoreSession, snapshotSession, viewCart } from "@/lib/cart";
+import { beginTurn, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
 import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 60;
@@ -97,6 +97,22 @@ export async function POST(req: Request) {
       },
     }),
   });
+}
+
+// The customer's "Yes, place order" button. Consent is recorded server-side for the CURRENT cart; place_order
+// refuses without it. It lives in THIS route (not its own /api/confirm) on purpose: on Vercel every route is a
+// separate serverless function with separate memory, and the session/cart lives in memory next to the chat route.
+// It is deliberately not a model tool, so the model cannot confirm on the customer's behalf.
+export async function PUT(req: Request) {
+  let sessionId = "";
+  try {
+    sessionId = String((await req.json()).sessionId ?? "");
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  if (!/^[\w-]{8,64}$/.test(sessionId)) return Response.json({ error: "bad sessionId" }, { status: 400 });
+  if (!userConfirm(sessionId)) return Response.json({ ok: false, error: "Your cart is empty." }, { status: 409 });
+  return Response.json({ ok: true, cart: viewCart(sessionId) });
 }
 
 // Lets the UI's cart panel read the authoritative cart without going through the model.
