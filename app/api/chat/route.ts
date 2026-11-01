@@ -1,5 +1,6 @@
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from "ai";
 import { agentConfig } from "@/lib/agent";
+import { buildTools } from "@/lib/tools";
 import { streamWithFailover } from "@/lib/failover";
 import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
@@ -8,7 +9,7 @@ import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 60;
 
-const MAX_MESSAGES = 30;
+const MAX_MESSAGES = 14; // history window; every message is re-sent on every model call
 
 function textOf(m: UIMessage | undefined): string {
   return (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
@@ -52,7 +53,8 @@ export async function POST(req: Request) {
 
   beginTurn(sessionId);
   const snapshot = snapshotSession(sessionId);
-  const modelMessages = await convertToModelMessages(messages);
+  // Passing the tools lets older tool results in the history use their compact model-facing view (toModelOutput).
+  const modelMessages = await convertToModelMessages(messages, { tools: buildTools(sessionId) });
 
   // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
   // configured backup is tried invisibly, and the failed one is skipped for a couple of minutes.
