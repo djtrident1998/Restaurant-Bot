@@ -115,7 +115,7 @@ export function Chat() {
                 onAdd={(it: MenuCardItem) => send(`Add 1 ${it.name} to my cart`)}
               />
             </div>
-            {error && <p className="mt-3 text-sm text-red-700">Something went wrong. Please try again.</p>}
+            {error && <p className="mt-3 text-sm text-red-700">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
             <div ref={bottomRef} />
           </div>
 

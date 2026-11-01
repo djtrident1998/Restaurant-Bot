@@ -2,6 +2,7 @@ import { convertToModelMessages, createUIMessageStream, createUIMessageStreamRes
 import { agentConfig } from "@/lib/agent";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
 import { beginTurn, viewCart } from "@/lib/cart";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 export const maxDuration = 60;
 
@@ -21,6 +22,10 @@ export async function POST(req: Request) {
   const sessionId = typeof body.sessionId === "string" && /^[\w-]{8,64}$/.test(body.sessionId) ? body.sessionId : null;
   if (!sessionId || !Array.isArray(body.messages) || body.messages.length === 0)
     return Response.json({ error: "sessionId and messages are required" }, { status: 400 });
+
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const limit = checkRateLimit(ip);
+  if (!limit.ok) return Response.json({ error: limit.reason }, { status: 429 });
 
   const messages = body.messages.slice(-MAX_MESSAGES);
   const lastUser = [...messages].reverse().find((m) => m.role === "user");

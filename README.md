@@ -17,12 +17,13 @@ npm install
 cp .env.example .env.local   # then fill in your key
 npm run dev                  # http://localhost:3000
 ```
-`.env.local`:
+`.env.local` (free Groq model by default):
 ```
-ANTHROPIC_API_KEY=your-key
-MODEL_ID=claude-sonnet-5-5
+MODEL_PROVIDER=groq
+MODEL_ID=openai/gpt-oss-120b
+GROQ_API_KEY=your-key
 ```
-The key is read server-side only and `.env*` is gitignored. Swapping the model is a one-line `MODEL_ID` change.
+Other providers: `google` (`GOOGLE_GENERATIVE_AI_API_KEY`, e.g. `gemini-2.5-flash`) or `anthropic` (`ANTHROPIC_API_KEY`, e.g. `claude-sonnet-5-5`). Keys are read server-side only and `.env*` is gitignored. See [free model notes](docs/FREE_MODEL_NOTES.md).
 
 ## Scripts
 | Command | What it does |

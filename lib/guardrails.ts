@@ -56,6 +56,7 @@ const LABELS = new Set([
   "spice", "price", "status", "items", "item", "received", "preparing", "out for delivery", "delivered",
   "main", "mains", "sides", "rice", "drinks", "drink", "breads", "bread", "dessert", "desserts", "starter",
   "starters", "beverages", "biryani", "biryanis", "cart", "your cart", "allergens", "contains",
+  "cart summary", "order summary", "summary", "quantity", "subtotal",
 ]);
 
 function isTitleCase(p: string): boolean {
@@ -63,7 +64,13 @@ function isTitleCase(p: string): boolean {
   return words.length > 0 && words.every((w) => /^[A-Z]/.test(w));
 }
 
+// Models emit typographic punctuation (non-breaking hyphens, curly quotes); compare on plain ASCII.
+export function normalizeText(s: string): string {
+  return s.replace(/[‐-―−]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/ /g, " ");
+}
+
 function isKnownDishPhrase(p: string): boolean {
+  p = normalizeText(p);
   const l = p.toLowerCase().replace(/[.:,]+$/, "").trim();
   if (menuNames.has(l) || categoryNames.has(l) || LABELS.has(l)) return true;
   if (/₹/.test(l) || /^[\d\s×x.,]+$/.test(l) || /^sr-\d+$/i.test(l)) return true; // amounts, quantities, order ids

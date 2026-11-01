@@ -1,4 +1,6 @@
 import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import { generateText, isStepCount, type ModelMessage } from "ai";
 import { buildTools } from "./tools";
 import { getSystemPrompt, type PromptVersion } from "./prompt";
@@ -13,6 +15,19 @@ export function getModelId(): string {
   return id;
 }
 
+/** MODEL_PROVIDER=groq (default, free tier) | google | anthropic. MODEL_ID picks the model. */
+export function getModel() {
+  const id = getModelId();
+  switch (process.env.MODEL_PROVIDER) {
+    case "anthropic":
+      return anthropic(id);
+    case "google":
+      return google(id);
+    default:
+      return groq(id);
+  }
+}
+
 export function getPromptVersion(): PromptVersion {
   return process.env.PROMPT_VERSION === "v1" ? "v1" : "v2";
 }
@@ -20,7 +35,7 @@ export function getPromptVersion(): PromptVersion {
 /** Shared config used by BOTH the streaming route and the headless eval runner. */
 export function agentConfig(sessionId: string, promptVersion: PromptVersion = getPromptVersion()) {
   return {
-    model: anthropic(getModelId()),
+    model: getModel(),
     system: getSystemPrompt(promptVersion),
     tools: buildTools(sessionId),
     stopWhen: isStepCount(MAX_STEPS),

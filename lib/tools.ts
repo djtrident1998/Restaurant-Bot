@@ -4,6 +4,7 @@ import { CATEGORIES, getItem, searchMenu, type MenuItem } from "./menu";
 import { addLine, checkout, findOrder, isReadBackCurrent, lineQty, markReadBack, viewCart } from "./cart";
 
 export const MAX_QTY_PER_LINE = 20;
+const POPULAR_IDS = ["st-01", "vm-02", "nv-01", "rb-01"];
 
 export const searchMenuSchema = z.object({
   query: z.string().max(200).default("").describe("Dish name or keywords, e.g. 'paneer tikka'. Empty to list by filters only."),
@@ -45,6 +46,17 @@ export function searchMenuTool(raw: unknown) {
   const p = searchMenuSchema.safeParse(raw);
   if (!p.success) return err(`Invalid arguments: ${p.error.issues.map((i) => i.message).join("; ")}`);
   const items = searchMenu(p.data.query, p.data.filters).map(present);
+  if (items.length === 0) {
+    // Honest "no" made grounded in code: hand the model real alternatives so it never has to invent any.
+    const alternatives = POPULAR_IDS.map((id) => getItem(id)).filter((i): i is MenuItem => !!i).map(present);
+    return {
+      ok: true as const,
+      count: 0,
+      items: [],
+      note: "No menu item matches. Tell the customer we don't have it. Only suggest dishes from `alternatives` (use their exact names and prices); never mention any other dish.",
+      alternatives,
+    };
+  }
   return { ok: true as const, count: items.length, items };
 }
 

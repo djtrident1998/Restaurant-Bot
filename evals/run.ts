@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ModelMessage } from "ai";
 import { runAgent, getModelId, type ToolCallRecord } from "../lib/agent";
-import { collectToolAmounts } from "../lib/guardrails";
+import { collectToolAmounts, normalizeText } from "../lib/guardrails";
 import { resetSession } from "../lib/cart";
 import type { PromptVersion } from "../lib/prompt";
 
@@ -90,8 +90,8 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
       return await fn();
     } catch (e) {
       const status = (e as { statusCode?: number }).statusCode;
-      if (i >= 3 || !(status === 429 || (status ?? 0) >= 500)) throw e;
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+      if (i >= 5 || !(status === 429 || (status ?? 0) >= 500)) throw e;
+      await new Promise((r) => setTimeout(r, (status === 429 ? 15000 : 2000) * (i + 1))); // free tiers: back off longer
     }
   }
 }
@@ -117,6 +117,7 @@ async function runCase(c: Case, version: PromptVersion): Promise<CaseResult> {
     lastCart = r.cart;
   }
 
+  reply = normalizeText(reply);
   const e = c.expect;
   const checks: Record<string, boolean> = { grounding: groundingOk };
   const failures: string[] = [];
@@ -186,7 +187,7 @@ async function runVersion(cases: Case[], version: PromptVersion): Promise<RunRes
       resetSession(`eval-${version}-${cases[i].id}`);
     }
   };
-  await Promise.all(Array.from({ length: 4 }, worker));
+  await Promise.all(Array.from({ length: Number(process.env.EVAL_CONCURRENCY ?? 4) }, worker));
   process.stdout.write("\n");
   const byType: RunResult["byType"] = {};
   for (const r of results) {
@@ -257,8 +258,13 @@ async function main() {
   const arg = process.argv.find((a) => a.startsWith("--version="))?.split("=")[1] ?? "both";
   // --version=report rebuilds docs/EVAL_REPORT.md from the stored evals/results.json without calling the API.
   const versions: PromptVersion[] = arg === "report" ? [] : arg === "both" ? ["v1", "v2"] : [arg as PromptVersion];
-  const cases: Case[] = JSON.parse(fs.readFileSync(path.join(__dirname, "testset.json"), "utf8"));
-  const resultsFile = path.join(__dirname, "results.json");
+  let cases: Case[] = JSON.parse(fs.readFileSync(path.join(__dirname, "testset.json"), "utf8"));
+  // EVAL_IDS=fact-01,no-03 runs a subset; EVAL_OUT=results.gemini.json writes elsewhere and skips the shared report.
+  if (process.env.EVAL_IDS) {
+    const ids = process.env.EVAL_IDS.split(",");
+    cases = cases.filter((c) => ids.includes(c.id));
+  }
+  const resultsFile = path.join(__dirname, process.env.EVAL_OUT ?? "results.json");
   const stored: Partial<Record<PromptVersion, RunResult>> = fs.existsSync(resultsFile) ? JSON.parse(fs.readFileSync(resultsFile, "utf8")) : {};
 
   for (const v of versions) {
@@ -270,6 +276,10 @@ async function main() {
     for (const c of bad) console.log(`  FAIL ${c.id}: ${c.failures.join(",")} | ${c.reply.replace(/\s+/g, " ").slice(0, 120)}`);
   }
   fs.writeFileSync(resultsFile, JSON.stringify(stored, null, 2));
+  if (process.env.EVAL_OUT) {
+    console.log(`\nWrote evals/${process.env.EVAL_OUT} (shared report not touched)`);
+    return;
+  }
   writeReport(stored, path.join(__dirname, "..", "docs", "EVAL_REPORT.md"));
   console.log("\nWrote evals/results.json and docs/EVAL_REPORT.md");
 }
