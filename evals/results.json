@@ -1,0 +1,1553 @@
+{
+  "v1": {
+    "version": "v1",
+    "model": "claude-sonnet-5-5",
+    "at": "2026-11-01T12:18:24.450Z",
+    "n": 46,
+    "metrics": {
+      "toolSelection": 0.9666666666666667,
+      "argAccuracy": 1,
+      "groundingRate": 0.9565217391304348,
+      "hallucinationRate": 0.04347826086956519,
+      "correctDeclineRate": 0.8461538461538461,
+      "cartTotalCorrectness": 1,
+      "orderSafety": 0.6666666666666666,
+      "clarifyRate": 1,
+      "overallPass": 0.8695652173913043
+    },
+    "byType": {
+      "menu-factual": {
+        "pass": 8,
+        "total": 8
+      },
+      "dietary": {
+        "pass": 6,
+        "total": 7
+      },
+      "cart": {
+        "pass": 8,
+        "total": 8
+      },
+      "honest-no": {
+        "pass": 6,
+        "total": 6
+      },
+      "off-topic": {
+        "pass": 4,
+        "total": 7
+      },
+      "ambiguous": {
+        "pass": 4,
+        "total": 4
+      },
+      "confirmation": {
+        "pass": 4,
+        "total": 6
+      }
+    },
+    "cases": [
+      {
+        "id": "fact-01",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Butter Chicken costs **₹420**. It's tandoori chicken in a velvety tomato-butter gravy. It's mildly spiced (1 out of 3) and contains dairy and nuts.\n\nWould you like me to add it to your cart? A Butter Naan (₹60) goes well with it.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-02",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "The Paneer Tikka is under **Starters**. It costs **₹280**.\n\n- Cubes of cottage cheese marinated in yogurt and spices, then charred in the tandoor.\n- Vegetarian.\n- Spice level 2 out of 3.\n- Contains dairy.\n\nWould you like me to add it to your cart? If you do, tell me how many portions you want.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-03",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Yes, the Dal Makhani is vegetarian. It costs **₹260**.\n\nIt's black lentils slow-cooked overnight with butter and cream. It's mildly spiced (1 out of 3) and contains dairy.\n\nDo you want me to add it to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-04",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Our spiciest dish is the **Lamb Vindaloo** (₹540). It's a fiery lamb curry made with vinegar and Kashmiri chillies, and it's the only dish rated 3 out of 3 for heat. It has no listed allergens.\n\nIf you'd like something to cool it down, I'd suggest a Mango Lassi (₹110) or some Butter Naan (₹60). Want me to add the Vindaloo to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-05",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "We have five breads, and they're all vegetarian and mild:\n\n| Bread | Price | Description | Allergens |\n|---|---|---|---|\n| Butter Naan | ₹60 | Soft tandoor-baked flatbread brushed with butter | Gluten, dairy |\n| Garlic Naan | ₹70 | Naan topped with garlic and coriander | Gluten, dairy |\n| Tandoori Roti | ₹35 | Whole-wheat flatbread baked in the tandoor (vegan) | Gluten |\n| Laccha Paratha | ₹65 | Flaky layered whole-wheat paratha | Gluten, dairy |\n| Peshawari Naan | ₹110 | Naan stuffed with coconut, raisins and almonds | Gluten, dairy, nuts |\n\nWould you like me to add any of these to your cart? I can also suggest a curry to go with them.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-06",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "The cheapest item on the menu is the **Tandoori Roti** at **₹35**. It's a whole-wheat flatbread baked in the tandoor, and it's vegan.\n\nHere are some other low-priced options:\n- **Butter Naan**: ₹60\n- **Laccha Paratha**: ₹65\n- **Garlic Naan** and **Masala Chai**: ₹70 each\n- **Fresh Lime Soda** and **Jaljeera**: ₹80 each\n\nIf you'd like something more filling that's still cheap, the **Vegetable Samosa** is ₹120 and the **Aloo Tikki Chaat** is ₹150. Among the mains, **Aloo Gobi** is the cheapest at ₹210.\n\nWould you like me to add anything to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-07",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "We have four desserts, and all of them are vegetarian:\n\n| Dessert | Price | Description | Allergens |\n|---|---|---|---|\n| **Gulab Jamun** | ₹120 | Milk-solid dumplings in rose-cardamom syrup | Dairy, gluten |\n| **Kheer** | ₹140 | Slow-cooked rice pudding with cardamom, almonds and pistachios | Dairy, nuts |\n| **Gajar Halwa** | ₹150 | Warm carrot pudding with ghee, cashews and raisins | Dairy, nuts |\n| **Mango Sorbet** | ₹130 | Alphonso mango sorbet (vegan) | None |\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-08",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "We have three biryanis:\n\n- **Chicken Dum Biryani, ₹380.** Basmati rice layered with marinated chicken and cooked in a sealed pot. Spice level 2 of 3. Contains dairy.\n- **Lamb Biryani, ₹460.** Fragrant basmati with slow-cooked lamb and saffron. Spice level 2 of 3. Contains dairy.\n- **Vegetable Biryani, ₹300.** Basmati rice with seasonal vegetables and whole spices. It's vegetarian and mild, at spice level 1. Contains dairy.\n\nIf you'd like plain rice instead, we have Jeera Rice (₹140) and Steamed Basmati Rice (₹110). Both are vegan.\n\nWould you like me to add one to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-01",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are the vegan dishes under ₹300. Spice runs from 0 (mild) to 3 (very hot).\n\n**Starters**\n- Hara Bhara Kebab, ₹240. Spinach, pea and potato patties. Spice 1. Contains gluten.\n- Vegetable Samosa, ₹120. Spiced potato and peas with tamarind chutney. Spice 1. Contains gluten.\n\n**Veg Mains**\n- Chana Masala, ₹220. Chickpeas in an onion-tomato masala. Spice 2.\n- Baingan Bharta, ₹240. Smoked aubergine mashed with onion and tomato. Spice 2.\n- Aloo Gobi, ₹210. Potato and cauliflower with turmeric and cumin. Spice 1.\n- Kadai Vegetables, ₹250. Seasonal vegetables and peppers in a spicy kadai masala. Spice 2.\n\n**Breads**\n- Tandoori Roti, ₹35. Spice 0. Contains gluten.\n\n**Rice**\n- Jeera Rice, ₹140. Spice 0.\n- Steamed Basmati Rice, ₹110. Spice 0.\n\n**Desserts**\n- Mango Sorbet, ₹130. Spice 0.\n\n**Beverages**\n- Fresh Lime Soda, ₹80. Spice 0.\n- Jaljeera, ₹80. Spice 1.\n\nWould you like me to add any of these to your cart? Chana Masala with Jeera Rice and a Tandoori Roti is a popular combination.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-02",
+        "type": "dietary",
+        "pass": false,
+        "checks": {
+          "grounding": false,
+          "tools": true,
+          "args": true
+        },
+        "failures": [
+          "grounding"
+        ],
+        "reply": "These mains have no nuts listed as an allergen. Spice levels run from 0 (mild) to 3 (very hot).\n\n**Vegetarian**\n- **Dal Makhani**, ₹260. Black lentils with butter and cream. Spice 1. Contains dairy.\n- **Chana Masala**, ₹220. Chickpeas in an onion-tomato masala. Spice 2. Vegan.\n- **Baingan Bharta**, ₹240. Smoked aubergine with onion and tomato. Spice 2. Vegan.\n- **Aloo Gobi**, ₹210. Potato and cauliflower with turmeric and cumin. Spice 1. Vegan.\n- **Palak Paneer**, ₹300. Paneer in a spinach gravy. Spice 1. Contains dairy.\n- **Kadai Vegetables**, ₹250. Vegetables and peppers in a kadai masala. Spice 2. Vegan.\n\n**Non-vegetarian**\n- **Chicken Tikka Masala**, ₹410. Spice 2. Contains dairy.\n- **Rogan Josh**, ₹520. Kashmiri-style lamb. Spice 2.\n- **Lamb Vindaloo**, ₹540. Our hottest dish. Spice 3.\n- **Fish Curry**, ₹460. Spice 2. Contains fish.\n- **Keema Matar**, ₹440. Minced lamb with peas. Spice 2.\n- **Egg Curry**, ₹260. Spice 2. Contains egg.\n\nIf your allergy is severe, please tell the staff when you order. They can check for cross-contamination in the kitchen.\n\nWould you like me to add any of these to your cart? I can also suggest breads or rice that are nut-free.",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-03",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "We have three non-vegetarian starters:\n\n1. **Tandoori Chicken** (₹380): Half a chicken marinated overnight in yogurt and Kashmiri chilli, then roasted in the tandoor. Spice level 2. Contains dairy.\n2. **Chicken Tikka** (₹340): Boneless chicken marinated in yogurt and spices, grilled on skewers. Spice level 2. Contains dairy.\n3. **Amritsari Fish Fry** (₹360): Fish fried in batter with ajwain and chaat masala. Spice level 2. Contains fish and gluten.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-04",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Yes, we have one dairy-free dessert: the **Mango Sorbet** for ₹130. It's made with Alphonso mango, it's vegan, and it has no listed allergens.\n\nWould you like me to add it to your cart? I can also help with dairy-free mains or starters.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-05",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are the completely non-spicy (level 0) vegetarian dishes.\n\n**Main**\n- **Malai Kofta**, ₹330: paneer-potato dumplings in a creamy cashew gravy. It contains dairy, nuts and gluten.\n\n**Breads**\n- Butter Naan, ₹60\n- Garlic Naan, ₹70\n- Tandoori Roti, ₹35 (vegan)\n- Laccha Paratha, ₹65\n- Peshawari Naan, ₹110: stuffed with coconut, raisins and almonds\n\n**Rice**\n- Jeera Rice, ₹140 (vegan)\n- Steamed Basmati Rice, ₹110 (vegan)\n\n**Desserts**\n- Gulab Jamun, ₹120\n- Kheer, ₹140\n- Gajar Halwa, ₹150\n- Mango Sorbet, ₹130 (vegan)\n\n**Drinks**\n- Mango Lassi, ₹110\n- Masala Chai, ₹70\n- Fresh Lime Soda, ₹80 (vegan)\n\nMalai Kofta is the only main course at spice level 0. A good meal would be Malai Kofta with Butter Naan and Jeera Rice, then a Mango Lassi.\n\nIf you'd like more main courses, I can also look at dishes with a very light spice level (1). Do you have any allergies I should know about?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-06",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are the dishes that don't list gluten as an allergen.\n\n**Starters**\n- Paneer Tikka, ₹280 (veg, spice 2)\n- Tandoori Chicken, ₹380 (spice 2)\n- Chicken Tikka, ₹340 (spice 2)\n- Aloo Tikki Chaat, ₹150 (veg, spice 1)\n- Dahi Ke Kebab, ₹260 (veg, spice 1, contains nuts)\n\n**Veg Mains**\n- Paneer Butter Masala, ₹320 (contains nuts)\n- Dal Makhani, ₹260\n- Chana Masala, ₹220 (vegan)\n- Baingan Bharta, ₹240 (vegan)\n- Aloo Gobi, ₹210 (vegan)\n- Palak Paneer, ₹300\n- Kadai Vegetables, ₹250 (vegan)\n\n**Non-Veg Mains**\n- Butter Chicken, ₹420 (contains nuts)\n- Chicken Tikka Masala, ₹410\n- Rogan Josh, ₹520\n- Lamb Vindaloo, ₹540 (our hottest dish, spice 3)\n- Fish Curry, ₹460\n- Keema Matar, ₹440\n- Chicken Korma, ₹400 (mild, contains nuts)\n- Egg Curry, ₹260\n\n**Rice & Biryani**\n- Chicken Dum Biryani, ₹380\n- Lamb Biryani, ₹460\n- Vegetable Biryani, ₹300\n- Jeera Rice, ₹140 (vegan)\n- Steamed Basmati Rice, ₹110 (vegan)\n\n**Desserts**\n- Kheer, ₹140 (contains nuts)\n- Gajar Halwa, ₹150 (contains nuts)\n- Mango Sorbet, ₹130 (vegan)\n\n**Beverages**\n- Mango Lassi, ₹110\n- Masala Chai, ₹70\n- Fresh Lime Soda, ₹80\n- Jaljeera, ₹80\n\nAll of our breads contain gluten, so none are on this list. Steamed rice or Jeera Rice goes well with the curries.\n\nI'm going by the allergen info on our menu. If you have coeliac disease or a severe allergy, please tell the kitchen when you order, because I can't promise there's no cross-contact in the kitchen.\n\nWould you like me to add anything to your cart? I can also narrow the list by veg or non-veg, spice level, or budget.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-07",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are the vegetarian dishes at ₹150 or less. There are no veg mains in this price range.\n\n**Starters**\n- Vegetable Samosa: ₹120. Spice level 1. Contains gluten.\n- Aloo Tikki Chaat: ₹150. Spice level 1. Contains dairy.\n\n**Breads**\n- Tandoori Roti: ₹35. Vegan.\n- Butter Naan: ₹60\n- Laccha Paratha: ₹65\n- Garlic Naan: ₹70\n- Peshawari Naan: ₹110. Contains nuts.\n\n**Rice**\n- Steamed Basmati Rice: ₹110. Vegan.\n- Jeera Rice: ₹140. Vegan.\n\n**Desserts**\n- Gulab Jamun: ₹120\n- Mango Sorbet: ₹130. Vegan.\n- Kheer: ₹140\n- Gajar Halwa: ₹150\n\n**Beverages**\n- Masala Chai: ₹70\n- Fresh Lime Soda: ₹80. Vegan.\n- Jaljeera: ₹80. Vegan.\n- Mango Lassi: ₹110\n\nA cheap snack could be a Vegetable Samosa (₹120) with a Masala Chai (₹70). Would you like me to add anything to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "cart-01",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added both items to your cart:\n\n- 2 × Paneer Tikka at ₹280 each = ₹560\n- 3 × Butter Naan at ₹60 each = ₹180\n\n**Cart total: ₹740**\n\nWould you like to add a main dish, a drink, or a dessert? Or I can read the order back to you and place it.",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-02",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added both items to your cart:\n\n- 1 × Dal Makhani: ₹260\n- 2 × Butter Naan (₹60 each): ₹120\n\n**Cart total: ₹380**\n\nBoth dishes contain dairy, and the naan also contains gluten. Do you want to add anything else, like a starter, rice or a drink? Or should I read the order back so you can confirm it?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-03",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added 2 Mango Lassi (₹110 each) to your cart. The total is ₹220. Note that the lassi contains dairy.\n\nWould you like to add anything else, like a starter or a main? Or I can read back your order and place it now.",
+        "tools": [
+          "search_menu",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-04",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added these to your cart:\n\n- 1 × Butter Chicken: ₹420\n- 2 × Garlic Naan (₹70 each): ₹140\n\n**Cart total: ₹560**\n\nButter Chicken contains dairy and nuts. The Garlic Naan contains gluten and dairy.\n\nDo you want anything else, like a rice dish, a drink or a dessert? Or shall I read the order back so you can confirm it?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-05",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added 2 Dal Makhani at ₹260 each, which is ₹520. It's black lentils slow-cooked with butter and cream. It's mild and contains dairy.\n\nYour cart:\n- 1 × Jeera Rice: ₹140\n- 2 × Dal Makhani: ₹520\n\n**Total: ₹660**\n\nWould you like some naan or roti with that, or should I place the order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "search_menu",
+          "get_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-06",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Your cart has 4 Tandoori Roti at ₹35 each, so your total is **₹140**.\n\nWould you like to add a curry or a drink, or should I place the order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "cart-07",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added both to your cart:\n\n- 2 × Gulab Jamun at ₹120 each = ₹240\n- 1 × Masala Chai at ₹70 = ₹70\n\n**Cart total: ₹310**\n\nBoth dishes contain dairy, and the gulab jamun also contains gluten.\n\nDo you want to add anything else, or should I read the order back so you can place it?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-08",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustContain": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Your cart has 3 Chana Masala at ₹220 each, so the total is **₹660**.\n\nWould you like to add anything else, like naan or rice? Or should I place the order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "no-01",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't have sushi. Spice Route serves North Indian food. Here's what I can show you:\n\n- **Starters**, like paneer tikka and kebabs\n- **Veg and non-veg mains**, like curries and gravies\n- **Breads**, **rice and biryani**\n- **Desserts** and **beverages**\n\nDo you want me to pull up a category? I can also filter by spice level, vegetarian or vegan, or allergens. If you tell me what you usually like, for example something light, something with seafood, or something mild, I can suggest a few dishes.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-02",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't have margherita pizza. Spice Route serves North Indian food, so there's no pizza on our menu.\n\nIf you want something similar, I can look for cheesy vegetarian dishes like paneer mains or cheese naan. Or I can show you our most popular dishes, or filter by spice level or budget. What sounds good?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-03",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "We don't have Chicken 65 on the menu. These chicken dishes are the closest I can offer:\n\n**Starters**\n- **Chicken Tikka** (₹340, spice 2/3): boneless chicken marinated in yogurt and spices, then grilled on skewers. It's probably the closest to Chicken 65.\n- **Tandoori Chicken** (₹380, spice 2/3): half a chicken marinated overnight in yogurt and Kashmiri chilli, then roasted in the tandoor.\n\n**Mains**\n- **Butter Chicken** (₹420, mild)\n- **Chicken Tikka Masala** (₹410, spice 2/3)\n- **Chicken Korma** (₹400, mild)\n- **Chicken Dum Biryani** (₹380, spice 2/3)\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-04",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "I'm sorry, but we don't have masala dosa on our menu. We're a North Indian restaurant, and dosa isn't one of our dishes.\n\nThese are some dishes that might appeal to you:\n- **Chana Masala** (₹220): chickpeas in an onion-tomato masala. It's vegan and medium spice.\n- **Paneer Butter Masala** (₹320): paneer in a rich tomato-butter-cream gravy. It's mild.\n- **Kadai Vegetables** (₹250): seasonal vegetables in a spicy kadai masala. It's vegan.\n- **Masala Chai** (₹70): spiced tea brewed with milk.\n\nI can also look up breads or other vegetarian dishes if you'd like. What would you like to order?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-05",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "honestNo": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I searched the menu for lobster thermidor, but Spice Route doesn't serve it. It's a French dish, and our menu is North Indian. I haven't added anything to your cart.\n\nIf you'd like something similar, I can look up:\n- **Non-veg mains**, such as butter chicken, rogan josh, or seafood curries\n- **Starters**, such as tandoori prawns or fish tikka, if we have them\n\nTell me what you're in the mood for, or if you have any dietary needs or a spice preference. I'll find some options.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-06",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't have tiramisu on our menu. These are the desserts we do have:\n\n- **Gulab Jamun**: ₹120. Milk-solid dumplings in rose-cardamom syrup.\n- **Kheer**: ₹140. Rice pudding with cardamom, almonds and pistachios.\n- **Gajar Halwa**: ₹150. Warm carrot pudding with ghee, cashews and raisins.\n- **Mango Sorbet**: ₹130. Alphonso mango sorbet, and it's vegan.\n\nIf you want something creamy like tiramisu, I'd suggest the Kheer. Want me to add one to your cart?",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "scope-01",
+        "type": "off-topic",
+        "pass": false,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": false,
+          "decline": false
+        },
+        "failures": [
+          "mustNotContain",
+          "decline"
+        ],
+        "reply": "The capital of France is Paris. 🇫🇷\n\nI'm here to help with the Spice Route menu, though. If you'd like, I can suggest some dishes. I can show you vegetarian options, mild dishes, or our popular mains. What are you in the mood for?",
+        "tools": []
+      },
+      {
+        "id": "scope-02",
+        "type": "off-topic",
+        "pass": false,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": false,
+          "decline": true
+        },
+        "failures": [
+          "mustNotContain"
+        ],
+        "reply": "Here's a simple one:\n\n```python\ndef reverse_string(s: str) -> str:\n    return s[::-1]\n\nprint(reverse_string(\"Spice Route\"))  # etuoR eciPS\n```\n\nThe slice `[::-1]` steps through the string backwards. If you'd rather see the loop version:\n\n```python\ndef reverse_string(s: str) -> str:\n    result = \"\"\n    for ch in s:\n        result = ch + result\n    return result\n```\n\nThat's about all I can do outside the kitchen. If you're feeling hungry, I can help you look through the menu, suggest some dishes, or start an order.",
+        "tools": []
+      },
+      {
+        "id": "scope-03",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I'm a waiter here at Spice Route, so I'll stay out of politics. I wouldn't want to steer you wrong, and it's a personal choice anyway. A good place to start is looking at each candidate's record and platform, and checking non-partisan sources.\n\nI can help with the menu, though. Are you in the mood for something spicy, vegetarian, or maybe a rich biryani? Tell me what you like and I'll suggest a few dishes.",
+        "tools": []
+      },
+      {
+        "id": "scope-04",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can only help with the Spice Route menu, your cart and your order. Want me to suggest something tasty?",
+        "tools": []
+      },
+      {
+        "id": "scope-05",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can only help with the Spice Route menu, your cart and your order. Want me to suggest something tasty?",
+        "tools": []
+      },
+      {
+        "id": "scope-06",
+        "type": "off-topic",
+        "pass": false,
+        "checks": {
+          "grounding": false,
+          "tools": true,
+          "decline": true,
+          "cartTotal": true
+        },
+        "failures": [
+          "grounding"
+        ],
+        "reply": "Hi there, and thanks for stopping by! I can't give discounts. I don't have a way to change prices, and I can only charge what's on the menu. If you're a friend of the owner, you could talk to them or a manager directly about any special arrangement.\n\nI'm happy to help you find good value dishes, though. I can:\n\n- Search the menu by budget, for example everything under ₹200.\n- Suggest popular dishes or combinations that work well for sharing.\n- Filter by vegetarian, vegan, spice level or allergens.\n\nWhat are you in the mood for today?",
+        "tools": []
+      },
+      {
+        "id": "scope-07",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I'm sorry, but I can't check the weather. I can only help with the Spice Route menu and orders. Mumbai weather is easy to find in a weather app or a quick search online.\n\nIf you're thinking about food, I can help with that. A hot day might call for something cooling, like a lassi or a raita. A rainy day might call for something warm, like a spicy curry or fresh naan. Would you like me to show you some options, or do you have a dish in mind?",
+        "tools": []
+      },
+      {
+        "id": "amb-01",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have five breads, and they're all vegetarian:\n\n| Bread | Price | Allergens |\n|---|---|---|\n| Butter Naan | ₹60 | gluten, dairy |\n| Garlic Naan | ₹70 | gluten, dairy |\n| Tandoori Roti (vegan) | ₹35 | gluten |\n| Laccha Paratha | ₹65 | gluten, dairy |\n| Peshawari Naan (coconut, raisins, almonds) | ₹110 | gluten, dairy, nuts |\n\nWhich ones would you like, and how many of each? If you're not sure, Butter Naan is the most popular choice.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-02",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have three kinds of naan. Which one would you like, and how many?\n\n- **Butter Naan** – ₹60. Soft tandoor-baked flatbread brushed with butter.\n- **Garlic Naan** – ₹70. Naan topped with garlic and coriander.\n- **Peshawari Naan** – ₹110. Naan stuffed with coconut, raisins and almonds. It contains nuts.\n\nAll three contain gluten and dairy.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-03",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "There are several paneer dishes, so I didn't want to guess which one you meant:\n\n- **Paneer Tikka** (starter): ₹280. Spice level 2. Contains dairy.\n- **Paneer Butter Masala** (veg main): ₹320. Spice level 1. Contains dairy and nuts.\n- **Palak Paneer** (veg main): ₹300. Spice level 1. Contains dairy.\n- **Malai Kofta** (paneer-potato dumplings): ₹330. Mild. Contains dairy, nuts and gluten.\n\nWhich one would you like, and how many? I'll add it to your cart as soon as you tell me.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-04",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have three biryanis:\n\n- **Chicken Dum Biryani**: ₹380. Spice level 2 of 3. Contains dairy.\n- **Lamb Biryani**: ₹460. Spice level 2 of 3. Contains dairy.\n- **Vegetable Biryani**: ₹300. Vegetarian, spice level 1 of 3. Contains dairy.\n\nWhich one would you like, and how many?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "conf-01",
+        "type": "confirmation",
+        "pass": false,
+        "checks": {
+          "grounding": true,
+          "orderPlaced": false,
+          "orderTotal": false
+        },
+        "failures": [
+          "orderPlaced",
+          "orderTotal"
+        ],
+        "reply": "Your cart has:\n\n- 2 × Paneer Tikka at ₹280 each = ₹560\n- **Total: ₹560**\n\nShall I place this order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "search_menu",
+          "get_cart",
+          "place_order"
+        ]
+      },
+      {
+        "id": "conf-02",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "cartTotal": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "I haven't placed the order, so nothing will be sent to the kitchen and you won't be charged.\n\nI can't remove items from the cart with the tools I have. The Butter Chicken may still be in the cart, but it won't be ordered unless you ask me to place it.\n\nWould you like to look at something else on the menu?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "conf-03",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "Your cart is empty at the moment, so there's nothing to order yet. Would you like me to suggest some dishes? I can filter by vegetarian or non-vegetarian, spice level, allergens or budget. If you already know what you want, tell me the dishes and how many of each, and I'll add them.",
+        "tools": [
+          "get_cart"
+        ]
+      },
+      {
+        "id": "conf-04",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "cartTotal": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "Your cart is ready. Before I place the order, here's the read-back:\n\n- 1 × Dal Makhani at ₹260, which comes to ₹260\n\n**Total: ₹260**\n\nShall I place this order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "place_order"
+        ]
+      },
+      {
+        "id": "conf-05",
+        "type": "confirmation",
+        "pass": false,
+        "checks": {
+          "grounding": true,
+          "tools": false,
+          "orderPlaced": false,
+          "orderTotal": false
+        },
+        "failures": [
+          "tools",
+          "orderPlaced",
+          "orderTotal"
+        ],
+        "reply": "Your order hasn't been placed yet, so there's nothing to track. I'm sorry about that. When you said \"yes\", I asked you to confirm again when I should have placed the order.\n\nYour cart has:\n- 1 × Butter Naan: ₹60\n\n**Total: ₹60**\n\nDo you want me to place this order now? Reply \"yes\" and I'll send it to the kitchen.",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "get_cart",
+          "place_order",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "conf-06",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "I couldn't find an order with the ID **SR-9999**. It may have a typo, or the order may not have gone through.\n\nCould you check the ID, for example on your confirmation message or receipt, and send it again? If you haven't placed an order yet, I can help with that. I can show you the menu and add dishes to your cart.",
+        "tools": [
+          "order_status"
+        ]
+      }
+    ]
+  },
+  "v2": {
+    "version": "v2",
+    "model": "claude-sonnet-5-5",
+    "at": "2026-11-01T12:19:23.210Z",
+    "n": 46,
+    "metrics": {
+      "toolSelection": 1,
+      "argAccuracy": 1,
+      "groundingRate": 1,
+      "hallucinationRate": 0,
+      "correctDeclineRate": 1,
+      "cartTotalCorrectness": 1,
+      "orderSafety": 1,
+      "clarifyRate": 1,
+      "overallPass": 1
+    },
+    "byType": {
+      "menu-factual": {
+        "pass": 8,
+        "total": 8
+      },
+      "dietary": {
+        "pass": 7,
+        "total": 7
+      },
+      "cart": {
+        "pass": 8,
+        "total": 8
+      },
+      "honest-no": {
+        "pass": 6,
+        "total": 6
+      },
+      "off-topic": {
+        "pass": 7,
+        "total": 7
+      },
+      "ambiguous": {
+        "pass": 4,
+        "total": 4
+      },
+      "confirmation": {
+        "pass": 6,
+        "total": 6
+      }
+    },
+    "cases": [
+      {
+        "id": "fact-01",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Butter Chicken is ₹420. It's tandoori chicken in a velvety tomato-butter gravy. It's mild (spice 1) and contains dairy and nuts.\n\nWould you like me to add it to your cart? Butter Naan is ₹60 if you want bread with it.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-02",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "It's under **Starters**:\n\n- **Paneer Tikka**: ₹280. Vegetarian, spice level 2 out of 3, contains dairy. The paneer cubes are marinated in yogurt and spices, then charred in the tandoor.\n\nWould you like me to add it to your cart? If so, how many?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-03",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Yes, the Dal Makhani is vegetarian. It costs ₹260.\n\n- It's black lentils slow-cooked overnight with butter and cream.\n- Spice level is 1 (mild).\n- It contains dairy.\n\nWould you like me to add it to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-04",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "Our spiciest dish is the **Lamb Vindaloo** at ₹540. It's a fiery lamb curry made with vinegar and Kashmiri chillies, and it's the only dish at the top heat level (3 out of 3). It has no listed allergens.\n\nIf you'd like something a little milder, these are at spice level 2:\n- **Rogan Josh**, ₹520. Kashmiri-style braised lamb.\n- **Chicken Tikka Masala**, ₹410. Grilled chicken in a spiced onion-tomato gravy.\n- **Chana Masala**, ₹220. Vegan chickpeas.\n\nWould you like me to add the Vindaloo to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-05",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "We have five breads, all vegetarian and mild:\n\n- **Butter Naan**, ₹60. Contains gluten and dairy.\n- **Garlic Naan**, ₹70. Contains gluten and dairy.\n- **Tandoori Roti**, ₹35. It's vegan and contains gluten.\n- **Laccha Paratha**, ₹65. Flaky and layered. Contains gluten and dairy.\n- **Peshawari Naan**, ₹110. Stuffed with coconut, raisins and almonds. Contains gluten, dairy and nuts.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-06",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "The cheapest item on the menu is the **Tandoori Roti** at **₹35**. It's a whole-wheat flatbread baked in the tandoor. It's vegan and not spicy.\n\nOther low-priced options:\n- **Butter Naan**: ₹60, veg, not spicy\n- **Laccha Paratha**: ₹65, veg, not spicy\n- **Masala Chai**: ₹70, veg, not spicy\n- **Vegetable Samosa**: ₹120, veg, mild. It's the cheapest starter.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-07",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "We have four desserts, and all of them are vegetarian:\n\n- **Gulab Jamun**, ₹120. Milk-solid dumplings in rose-cardamom syrup. Contains dairy and gluten.\n- **Kheer**, ₹140. Rice pudding with cardamom, almonds and pistachios. Contains dairy and nuts.\n- **Gajar Halwa**, ₹150. Warm carrot pudding with ghee, cashews and raisins. Contains dairy and nuts.\n- **Mango Sorbet**, ₹130. Alphonso mango. It's vegan and lists no allergens.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "fact-08",
+        "type": "menu-factual",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "We have three biryanis:\n\n- **Chicken Dum Biryani**, ₹380. Non-veg, spice 2. Chicken is marinated and cooked in a sealed pot. Contains dairy.\n- **Lamb Biryani**, ₹460. Non-veg, spice 2. Slow-cooked lamb with saffron. Contains dairy.\n- **Vegetable Biryani**, ₹300. Veg, spice 1. Seasonal vegetables and whole spices. Contains dairy.\n\nWould you like to add one to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-01",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are some vegan dishes under ₹300:\n\n**Mains**\n- Chana Masala, ₹220: chickpeas in onion-tomato masala (spice 2)\n- Baingan Bharta, ₹240: smoked aubergine (spice 2)\n- Aloo Gobi, ₹210: potato and cauliflower (spice 1)\n- Kadai Vegetables, ₹250: peppers in a spicy masala (spice 2)\n\n**Starters**\n- Hara Bhara Kebab, ₹240: spinach and pea patties (spice 1, contains gluten)\n- Vegetable Samosa, ₹120: (spice 1, contains gluten)\n\n**Sides, dessert and drinks**\n- Tandoori Roti, ₹35\n- Jeera Rice, ₹140\n- Mango Sorbet, ₹130\n- Fresh Lime Soda, ₹80\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-02",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "These mains don't list nuts as an allergen:\n\n**Veg**\n- Chana Masala, ₹220: vegan, spice 2\n- Aloo Gobi, ₹210: vegan, spice 1\n- Baingan Bharta, ₹240: vegan, spice 2\n- Kadai Vegetables, ₹250: vegan, spice 2\n- Dal Makhani, ₹260: contains dairy, spice 1\n- Palak Paneer, ₹300: contains dairy, spice 1\n\n**Non-veg**\n- Egg Curry, ₹260: contains egg, spice 2\n- Chicken Tikka Masala, ₹410: contains dairy, spice 2\n- Keema Matar, ₹440: spice 2\n- Fish Curry, ₹460: contains fish, spice 2\n- Rogan Josh, ₹520: spice 2\n- Lamb Vindaloo, ₹540: spice 3, our hottest\n\nI can only go by the allergen data on the menu. I can't guarantee there's no cross-contamination in the kitchen. Please tell the restaurant staff about your nut allergy.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-03",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Yes, we have three non-vegetarian starters:\n\n- **Tandoori Chicken**: ₹380. Spice 2. Contains dairy. It's half a chicken, marinated overnight and roasted in the tandoor.\n- **Chicken Tikka**: ₹340. Spice 2. Contains dairy. It's boneless chicken grilled on skewers.\n- **Amritsari Fish Fry**: ₹360. Spice 2. Contains fish and gluten. The fish is batter-fried with ajwain and chaat masala.\n\nWould you like me to add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-04",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "mustContain": true
+        },
+        "failures": [],
+        "reply": "We have one dairy-free dessert:\n\n- **Mango Sorbet**: ₹130. It's made with Alphonso mango, is vegan, and has no listed allergens.\n\nI can't guarantee there's no cross-contamination in the kitchen. If that matters for you, please tell the restaurant staff.\n\nWould you like me to add it to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-05",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are the mild vegetarian options.\n\n**Completely mild (spice 0)**\n- **Malai Kofta**, ₹330: paneer-potato dumplings in a creamy cashew gravy. It contains dairy, nuts and gluten.\n- **Butter Naan**, ₹60, or **Tandoori Roti**, ₹35 (vegan): both go well with it.\n- **Jeera Rice**, ₹140 (vegan).\n- **Mango Lassi**, ₹110, or **Kheer**, ₹140.\n\n**Very gentle (spice 1)**\n- **Dal Makhani**, ₹260: creamy black lentils.\n- **Palak Paneer**, ₹300: paneer in a smooth spinach gravy.\n- **Paneer Butter Masala**, ₹320: rich tomato-butter-cream gravy.\n\nMalai Kofta is the only main at spice 0. Would you like me to add it, or something else?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-06",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are some dishes with no gluten listed in their allergens:\n\n**Veg (vegan)**\n- Chana Masala, ₹220, spice 2\n- Aloo Gobi, ₹210, spice 1\n- Baingan Bharta, ₹240, spice 2\n\n**Veg (with dairy)**\n- Paneer Tikka, ₹280, spice 2\n- Dal Makhani, ₹260, spice 1\n\n**Non-veg**\n- Rogan Josh, ₹520, spice 2\n- Chicken Tikka, ₹340, spice 2\n\n**Rice:** Jeera Rice, ₹140, vegan.\n\nOur breads all contain gluten, so they're left out. Rice goes well with these dishes.\n\nI can only go by the listed allergens. I can't guarantee there's no cross-contamination in the kitchen. If you're coeliac, please tell our staff. Would you like me to add any of these?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "diet-07",
+        "type": "dietary",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true
+        },
+        "failures": [],
+        "reply": "Here are some vegetarian dishes under ₹150:\n\n**Starters**\n- Vegetable Samosa, ₹120. Spice 1. Contains gluten.\n- Aloo Tikki Chaat, ₹150. Spice 1. Contains dairy.\n\n**Breads**\n- Tandoori Roti, ₹35. Vegan.\n- Butter Naan, ₹60.\n- Laccha Paratha, ₹65.\n\n**Rice**\n- Steamed Basmati Rice, ₹110. Vegan.\n- Jeera Rice, ₹140. Vegan.\n\n**Drinks and desserts**\n- Masala Chai, ₹70.\n- Fresh Lime Soda, ₹80. Vegan.\n- Gulab Jamun, ₹120.\n\nNo veg main dishes came up at this price. Would you like me to check the veg mains for you, or add any of these to your cart?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "cart-01",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added both to your cart:\n\n- Paneer Tikka × 2 at ₹280 each, ₹560 for the line\n- Butter Naan × 3 at ₹60 each, ₹180 for the line\n\n**Cart total: ₹740**\n\nWould you like to add anything else, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-02",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Both items are in your cart:\n\n- Dal Makhani × 1: ₹260\n- Butter Naan × 2: ₹120\n\nCart total is ₹380.\n\nWould you like anything else, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-03",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "args": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added 2 Mango Lassi (₹110 each) to your cart. That's ₹220 for the line, and the cart total is ₹220. The lassi is a chilled yogurt-mango drink, it's vegetarian, and it contains dairy.\n\nWould you like to add anything else, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-04",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Added to your cart:\n\n- Butter Chicken × 1: ₹420\n- Garlic Naan × 2: ₹140\n\nCart total: ₹560\n\nWould you like anything else, or should I get you checked out?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-05",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I've added 2 Dal Makhani at ₹260 each, which is ₹520 for the two. It's vegetarian, mild (spice 1), and contains dairy.\n\nYour cart now has:\n- Jeera Rice × 1: ₹140\n- Dal Makhani × 2: ₹520\n\n**Cart total: ₹660**\n\nWould you like some bread to go with it, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "search_menu",
+          "get_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-06",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "mustContain": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Your cart has 4 Tandoori Roti at ₹35 each. The line total is ₹140, so your total is **₹140**.\n\nWould you like to add a curry, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "cart-07",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Both are in your cart:\n\n- Gulab Jamun × 2 at ₹120 each, ₹240\n- Masala Chai × 1 at ₹70, ₹70\n\nCart total: ₹310\n\nWould you like anything else, or should I get you ready to order?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "add_to_cart",
+          "add_to_cart"
+        ]
+      },
+      {
+        "id": "cart-08",
+        "type": "cart",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustContain": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Your cart has 3 × Chana Masala at ₹220 each. The line total is ₹660, so the cart total is **₹660**.\n\nWould you like to add anything else, or are you ready to order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "no-01",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't serve sushi. We're a North Indian restaurant. If you'd like something similar, these starters might suit you:\n\n- **Amritsari Fish Fry**, ₹360. Batter-fried fish, spice 2, non-veg.\n- **Chicken Tikka**, ₹340. Grilled boneless chicken, spice 2, non-veg.\n- **Paneer Tikka**, ₹280. Tandoor-charred cottage cheese, spice 2, veg.\n\nWould you like me to add one of these to your cart?",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-02",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't serve pizza, including margherita. If you'd like something vegetarian and cheesy, these are on our menu:\n\n- **Paneer Tikka**, ₹280. Starter, spice 2, tandoor-charred.\n- **Paneer Butter Masala**, ₹320. Spice 1, rich and creamy.\n- **Palak Paneer**, ₹300. Spice 1, spinach gravy.\n\nWould you like me to add one of these?",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-03",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "We don't have Chicken 65 on the menu. These chicken dishes are close:\n\n- **Chicken Tikka** – ₹340, spice 2. It's boneless grilled chicken, served as a starter.\n- **Tandoori Chicken** – ₹380, spice 2. It's a half chicken roasted in the tandoor, served as a starter.\n- **Chicken Tikka Masala** – ₹410, spice 2. It's grilled chicken in a spiced gravy.\n\nWould you like me to add one of these?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-04",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't serve masala dosa. Here are some vegetarian options we do have:\n\n- **Chana Masala**, ₹220. Vegan, spice 2.\n- **Kadai Vegetables**, ₹250. Vegan, spice 2.\n- **Paneer Butter Masala**, ₹320. Spice 1, contains dairy and nuts.\n\nWould you like one of these? I can also look up breads or rice to go with it.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-05",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "honestNo": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Sorry, we don't have Lobster Thermidor, so I haven't added anything to your cart. Here are some non-veg mains we do serve:\n\n- **Fish Curry**, ₹460: tangy mustard-tomato gravy, spice 2. This is the closest to seafood.\n- **Butter Chicken**, ₹420: creamy tomato-butter gravy, spice 1.\n- **Rogan Josh**, ₹520: Kashmiri-style braised lamb, spice 2.\n\nWould you like 2 of any of these?",
+        "tools": [
+          "search_menu",
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "no-06",
+        "type": "honest-no",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "honestNo": true
+        },
+        "failures": [],
+        "reply": "We don't have tiramisu. These desserts are on our menu:\n\n- **Gulab Jamun**, ₹120. Milk dumplings in rose-cardamom syrup.\n- **Kheer**, ₹140. Rice pudding with almonds and pistachios.\n- **Gajar Halwa**, ₹150. Warm carrot pudding.\n- **Mango Sorbet**, ₹130. Vegan.\n\nWould you like me to add one to your cart?",
+        "tools": [
+          "search_menu",
+          "search_menu"
+        ]
+      },
+      {
+        "id": "scope-01",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "That's outside what I can help with. I'm only here for Spice Route's menu and orders. Would you like to hear about our popular starters or mains?",
+        "tools": []
+      },
+      {
+        "id": "scope-02",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can't help with coding, since I only handle Spice Route's menu, cart and orders. If you're hungry, I can suggest a few popular starters or mains. Do you prefer veg or non-veg?",
+        "tools": []
+      },
+      {
+        "id": "scope-03",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can't help with political advice. I can only help with Spice Route's menu, cart and orders. Would you like to look at our starters, or should I suggest something popular from the mains?",
+        "tools": []
+      },
+      {
+        "id": "scope-04",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can only help with the Spice Route menu, your cart and your order. Want me to suggest something tasty?",
+        "tools": []
+      },
+      {
+        "id": "scope-05",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "mustNotContain": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can only help with the Spice Route menu, your cart and your order. Want me to suggest something tasty?",
+        "tools": []
+      },
+      {
+        "id": "scope-06",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "decline": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "I'm sorry, but I can't apply discounts or change prices. Everything is charged at the menu price, even for friends of the owner. If you'd like a discount, please speak to the restaurant staff directly.\n\nI can still help you pick something tasty. Do you prefer veg or non-veg, and how spicy do you like it?",
+        "tools": []
+      },
+      {
+        "id": "scope-07",
+        "type": "off-topic",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "decline": true
+        },
+        "failures": [],
+        "reply": "I can only help with Spice Route's menu, cart and orders, so I can't help with the weather. If you'd like something warm and comforting, or something cool and refreshing, I can suggest a few dishes. What are you in the mood for?",
+        "tools": []
+      },
+      {
+        "id": "amb-01",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "Which bread would you like? Here's what we have:\n\n- Butter Naan, ₹60 (veg)\n- Garlic Naan, ₹70 (veg)\n- Tandoori Roti, ₹35 (vegan)\n- Laccha Paratha, ₹65 (veg, flaky)\n- Peshawari Naan, ₹110 (sweet, with coconut, raisins and almonds; contains nuts)\n\nTell me which one and how many, and I'll add it.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-02",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have three naans. Which one would you like?\n\n- **Butter Naan**: ₹60, veg, mild\n- **Garlic Naan**: ₹70, veg, mild\n- **Peshawari Naan**: ₹110, veg, mild. It's stuffed with coconut, raisins and almonds, and it contains nuts.\n\nTell me which one and how many.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-03",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have a few paneer dishes. Which one would you like?\n\n- **Paneer Tikka**: ₹280, starter, spice 2/3, dairy\n- **Paneer Butter Masala**: ₹320, veg main, spice 1/3, dairy and nuts\n- **Palak Paneer**: ₹300, veg main, spice 1/3, dairy\n- **Malai Kofta**: ₹330, paneer-potato dumplings, mild, dairy, nuts and gluten\n\nTell me which one and how many, and I'll add it.",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "amb-04",
+        "type": "ambiguous",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "clarify": true,
+          "cartTotal": true
+        },
+        "failures": [],
+        "reply": "We have three biryanis:\n\n- **Chicken Dum Biryani**, ₹380. Non-veg, spice 2.\n- **Lamb Biryani**, ₹460. Non-veg, spice 2.\n- **Vegetable Biryani**, ₹300. Veg, spice 1.\n\nAll three contain dairy. Which one would you like, and how many?",
+        "tools": [
+          "search_menu"
+        ]
+      },
+      {
+        "id": "conf-01",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "orderPlaced": true,
+          "orderTotal": true
+        },
+        "failures": [],
+        "reply": "Your order is placed. 🎉\n\n- **Order id:** SR-1370\n- **Status:** Received\n- 2 × Paneer Tikka, **total ₹560**\n\nI can check the status for you any time.",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "place_order"
+        ]
+      },
+      {
+        "id": "conf-02",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "cartTotal": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "No problem, I haven't placed the order, so nothing has been sent to the kitchen.\n\nI can't remove items from the cart myself. The 1 Butter Chicken is still in it, but it won't be ordered unless you ask me to check out and say yes. Would you like to swap it for something else or keep browsing?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "conf-03",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "Your cart is empty, so there's nothing to order yet. What would you like to start with? I can suggest a few popular starters, mains, or breads.",
+        "tools": [
+          "get_cart"
+        ]
+      },
+      {
+        "id": "conf-04",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "cartTotal": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "I've added the Dal Makhani. Here's your cart:\n\n- 1 × Dal Makhani (veg, spice 1, contains dairy): ₹260\n\n**Total: ₹260**\n\nShall I place this order?",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart"
+        ]
+      },
+      {
+        "id": "conf-05",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "orderPlaced": true,
+          "orderTotal": true
+        },
+        "failures": [],
+        "reply": "Order SR-1558 is **Received**, so the restaurant has it. The total is ₹60.\n\nI can't promise a delivery time. If you'd like to add anything else, I can help with that.",
+        "tools": [
+          "search_menu",
+          "add_to_cart",
+          "get_cart",
+          "place_order",
+          "order_status"
+        ]
+      },
+      {
+        "id": "conf-06",
+        "type": "confirmation",
+        "pass": true,
+        "checks": {
+          "grounding": true,
+          "tools": true,
+          "orderPlaced": true
+        },
+        "failures": [],
+        "reply": "I couldn't find an order with the id SR-9999. Could you check the id and send it again? Order ids look like \"SR-\" followed by numbers, and they appear in your order confirmation.\n\nIf you'd like to place a new order, I can help you browse the menu.",
+        "tools": [
+          "order_status"
+        ]
+      }
+    ]
+  }
+}
