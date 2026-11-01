@@ -4,8 +4,12 @@ import { buildTools } from "@/lib/tools";
 import { streamWithFailover } from "@/lib/failover";
 import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
-import { beginTurn, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
+import { beginTurn, getOrders, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
+import { getCurrentUser } from "@/lib/auth/session";
+import { getStore } from "@/lib/auth/store";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { COURSE_ASK_TEXT, courseOutputs, detectMenuIntent } from "@/lib/course";
+import { detectOrderIntent, handleOrderIntent, type StaticOutput } from "@/lib/orderFlow";
 
 export const maxDuration = 60;
 
@@ -13,6 +17,47 @@ const MAX_MESSAGES = 14; // history window; every message is re-sent on every mo
 
 function textOf(m: UIMessage | undefined): string {
   return (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
+}
+
+/** A fixed reply streamed like a model answer: text, then tool outputs the UI renders (dish cards, order card). */
+function staticReply(text: string, outputs: StaticOutput[] = []) {
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: ({ writer }) => {
+        writer.write({ type: "text-start", id: "static" });
+        writer.write({ type: "text-delta", id: "static", delta: text });
+        writer.write({ type: "text-end", id: "static" });
+        outputs.forEach((o, i) => {
+          const toolCallId = `static-${Date.now().toString(36)}-${i}`;
+          writer.write({ type: "tool-input-available", toolCallId, toolName: o.toolName, input: o.input });
+          writer.write({ type: "tool-output-available", toolCallId, output: o.output });
+        });
+      },
+    }),
+  });
+}
+
+/**
+ * Save orders placed since `before` (the session's order count at the start of the turn) to the signed-in customer's
+ * account. Done after a turn succeeds, never inside a tool, so a failed model attempt that is rolled back and
+ * retried can never record an order twice.
+ */
+async function saveOrdersToAccount(sessionId: string, before: number): Promise<void> {
+  const placed = getOrders(sessionId).slice(before);
+  if (!placed.length) return;
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
+    for (const o of placed)
+      await getStore().addOrder(user.id, {
+        id: o.id,
+        total: o.cart.total,
+        placedAt: o.placedAt,
+        lines: o.cart.lines.map((l) => ({ name: l.name, qty: l.qty, lineTotal: l.lineTotal })),
+      });
+  } catch (e) {
+    console.error("[orders] could not save to account", String(e).slice(0, 200));
+  }
 }
 
 export async function POST(req: Request) {
@@ -27,26 +72,32 @@ export async function POST(req: Request) {
     return Response.json({ error: "sessionId and messages are required" }, { status: 400 });
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const limit = checkRateLimit(ip);
-  if (!limit.ok) return Response.json({ error: limit.reason }, { status: 429 });
-
   const messages = body.messages.slice(-MAX_MESSAGES);
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const userText = textOf(lastUser);
 
   // Guardrail: deterministic scope/injection gate before the model sees anything.
-  const gate = checkUserInput(textOf(lastUser));
-  if (!gate.ok) {
-    const reply = gate.reply;
-    return createUIMessageStreamResponse({
-      stream: createUIMessageStream({
-        execute: ({ writer }) => {
-          writer.write({ type: "text-start", id: "scope" });
-          writer.write({ type: "text-delta", id: "scope", delta: reply });
-          writer.write({ type: "text-end", id: "scope" });
-        },
-      }),
-    });
+  const gate = checkUserInput(userText);
+  if (!gate.ok) return staticReply(gate.reply);
+
+  // Menu browsing is deterministic and free: "show me the menu" asks which course; a course button shows its dishes
+  // (built straight from menu.json). No model call, so it is instant and uses none of the AI quota.
+  const intent = detectMenuIntent(userText);
+  if (intent?.type === "ask") return staticReply(COURSE_ASK_TEXT);
+  if (intent?.type === "course") return staticReply(intent.course.intro, courseOutputs(intent.course));
+
+  // The ordering buttons are deterministic too: Add to cart, Checkout and "Yes, place order" are answered by code
+  // (same guarded tools, totals and confirm-button rule as the model path) — instant, free, and independent of AI outages.
+  const orderIntent = detectOrderIntent(userText);
+  if (orderIntent) {
+    const ordersBefore = getOrders(sessionId).length;
+    const result = handleOrderIntent(sessionId, orderIntent);
+    await saveOrdersToAccount(sessionId, ordersBefore);
+    return staticReply(result.text, result.outputs);
   }
+
+  const limit = checkRateLimit(ip);
+  if (!limit.ok) return Response.json({ error: limit.reason }, { status: 429 });
 
   const candidates = availableCandidates(getChain());
   if (candidates.length === 0) return Response.json({ error: "No AI provider is configured." }, { status: 503 });
@@ -65,7 +116,7 @@ export async function POST(req: Request) {
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
-        await streamWithFailover(
+        const winner = await streamWithFailover(
           candidates,
           (c, isLast) =>
             streamText({
@@ -96,6 +147,9 @@ export async function POST(req: Request) {
             },
           },
         );
+
+        // Only after the turn succeeded (a failed attempt is rolled back and retried, so it must not have saved anything).
+        if (winner) await saveOrdersToAccount(sessionId, snapshot.orders.length);
       },
     }),
   });

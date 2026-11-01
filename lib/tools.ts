@@ -38,7 +38,7 @@ type Err = { ok: false; error: string };
 const err = (error: string): Err => ({ ok: false, error });
 
 function present(i: MenuItem) {
-  return { id: i.id, name: i.name, description: i.description, category: i.category, price: i.price, veg: i.veg, spice: i.spice, allergens: i.allergens };
+  return { id: i.id, name: i.name, description: i.description, category: i.category, price: i.price, veg: i.veg, spice: i.spice, allergens: i.allergens, image: i.image };
 }
 
 // ---- pure implementations (unit-testable; args are validated with Zod) ----

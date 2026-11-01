@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local development accounts (file-backed user store)
+.data/
+
 # vercel
 .vercel
 

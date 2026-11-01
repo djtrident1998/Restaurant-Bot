@@ -21,6 +21,7 @@ export interface MenuItem {
   veg: boolean;
   spice: number;
   allergens: string[];
+  image: string; // Unsplash photo id (see lib/images.ts)
 }
 
 export interface MenuFilters {

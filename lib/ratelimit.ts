@@ -4,6 +4,23 @@ const g = globalThis as unknown as { __spiceHits?: Map<string, number[]>; __spic
 const hits = (g.__spiceHits ??= new Map<string, number[]>());
 
 export const PER_MINUTE = 12;
+// Brute-force protection for sign-in / sign-up: N attempts per window per key (ip + email).
+const authGlobal = globalThis as unknown as { __spiceAuth?: Map<string, number[]> };
+const authHits = (authGlobal.__spiceAuth ??= new Map<string, number[]>());
+export const AUTH_ATTEMPTS = 8;
+export const AUTH_WINDOW_MS = 10 * 60_000;
+
+export function checkAuthLimit(key: string, now = Date.now()): boolean {
+  const recent = (authHits.get(key) ?? []).filter((t) => now - t < AUTH_WINDOW_MS);
+  if (recent.length >= AUTH_ATTEMPTS) {
+    authHits.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  authHits.set(key, recent);
+  return true;
+}
+
 // Paid model: caps double as a cost ceiling (each message is ~2-3 model calls of ~2.5k input tokens).
 export const PER_DAY = 40;
 export const GLOBAL_PER_DAY = 300;

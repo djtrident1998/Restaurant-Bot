@@ -118,6 +118,10 @@ export function checkout(sessionId: string): Order {
   return order;
 }
 
+export function getOrders(sessionId: string): Order[] {
+  return [...session(sessionId).orders];
+}
+
 export function findOrder(sessionId: string, orderId: string): Order | undefined {
   return session(sessionId).orders.find((o) => o.id.toLowerCase() === orderId.trim().toLowerCase());
 }

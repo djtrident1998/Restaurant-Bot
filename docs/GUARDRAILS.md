@@ -26,6 +26,12 @@ Why a button and not "the model saw a yes": evals and a live test showed that we
 
 History: a first version only required a `get_cart` read-back in an earlier turn; that was found too weak (an order was placed after only a Checkout click).
 
+### Button-driven ordering is deterministic
+*Add to cart*, *Checkout* and *Yes, place order* send fixed messages that the chat route recognises (`lib/orderFlow.ts`) and answers with code — the same guarded tool functions, not the model. Totals are computed by code, the read-back lists every line, and `place_order` still refuses without the server-recorded button press. Free-text requests ("place my order", "yes") still go to the model and still cannot place an order without the button.
+
+### Accounts
+Passwords are hashed with salted **scrypt** and compared in constant time; sign-in answers "Incorrect email or password" for both unknown email and wrong password (and does the same amount of work), so accounts can't be probed. Sessions are an HMAC-signed token in an `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookie that expires after 7 days. Sign-in and sign-up are rate-limited (8 attempts / 10 minutes per IP+email). Orders are saved to the account only after a turn succeeds, so a model failover/retry can never record an order twice.
+
 ## 3. Honest "no"
 Searching for sushi/pizza/Chicken 65 returns zero items; the prompt requires saying so and offering 2–3 real alternatives found by search. `add_to_cart` with an unknown id fails. The eval asserts no successful add and no invented dish.
 

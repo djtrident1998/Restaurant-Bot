@@ -1,19 +1,127 @@
 @import "tailwindcss";
 
+/* Spice Route — luxury theme: warm black, antique gold, ivory. */
 :root {
-  --background: #fbf7f0;
-  --foreground: #1c1917;
+  --ink: #0b0907;
+  --panel: #14110e;
+  --panel-2: #1c1713;
+  --gold: #c9a24d;
+  --gold-soft: #e6c98a;
+  --gold-deep: #9a7a32;
+  --ivory: #f5efe3;
+  --muted: #b3a792;
+  --line: rgba(201, 162, 77, 0.28);
+  --ruby: #8b1e2d;
+  --veg: #5fae6b;
+  --nonveg: #c8514b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
+  --color-ivory: var(--ivory);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-ruby: var(--ruby);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+}
+
+html {
+  background: var(--ink);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(201, 162, 77, 0.08), transparent 60%), var(--ink);
+  color: var(--ivory);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+/* Thin gold rule with a centre ornament, used between sections. */
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--gold);
+}
+.ornament::before,
+.ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 55%, var(--gold-deep));
+  color: #1a1408;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 9999px;
+  transition: filter 0.2s, transform 0.2s;
+}
+.btn-gold:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-gold:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-gold:disabled {
+  opacity: 0.45;
+}
+
+.btn-ghost {
+  border: 1px solid var(--line);
+  color: var(--ivory);
+  border-radius: 9999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(201, 162, 77, 0.1);
+  border-color: var(--gold);
+}
+
+.card {
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+/* Custom scrollbars to match the theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-deep) transparent;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fade-up 0.8s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up {
+    animation: none;
+  }
 }
