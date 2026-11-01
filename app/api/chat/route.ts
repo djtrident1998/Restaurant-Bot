@@ -71,7 +71,9 @@ export async function POST(req: Request) {
               messages: modelMessages,
               maxRetries: isLast ? 1 : 0, // fail fast on all but the last so a backup is tried quickly
               // Time budget (function limit is 60s): a stuck model must not freeze the reply.
-              abortSignal: AbortSignal.timeout(isLast ? 28_000 : 14_000),
+              // 3 backups x 12s + last 22s fits the 60s function limit. Rate-limit failures are instant, so
+              // the budget only matters when a provider hangs.
+              abortSignal: AbortSignal.timeout(isLast ? 22_000 : 12_000),
               onError: ({ error }) => {
                 realErrors.set(keyOf(c), error);
               },
