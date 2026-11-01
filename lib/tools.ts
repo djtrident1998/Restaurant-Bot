@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { CATEGORIES, getItem, searchMenu, type MenuItem } from "./menu";
-import { addLine, checkout, findOrder, isReadBackCurrent, lineQty, markReadBack, viewCart } from "./cart";
+import { addLine, checkout, findOrder, isUserConfirmed, lineQty, markReadBack, viewCart } from "./cart";
 
 export const MAX_QTY_PER_LINE = 20;
 const POPULAR_IDS = ["st-01", "vm-02", "nv-01", "rb-01"];
@@ -86,8 +86,9 @@ export function placeOrderTool(sessionId: string, raw: unknown) {
   if (!p.data.confirmed)
     return err("Order NOT placed: customer has not confirmed. Read back the cart with get_cart, state the total, and ask for an explicit yes.");
   if (viewCart(sessionId).lines.length === 0) return err("Order NOT placed: the cart is empty.");
-  if (!isReadBackCurrent(sessionId))
-    return err("Order NOT placed: the customer has not yet been shown the current cart. Call get_cart now, read back the items and exact total, ask 'Shall I place this order?', and END your reply. Only call place_order after they say yes in their NEXT message.");
+  // The real confirmation: set only by the customer pressing the UI button (POST /api/confirm), never by the model.
+  if (!isUserConfirmed(sessionId))
+    return err("Order NOT placed: the customer has not pressed the 'Yes, place order' button for the current cart. Read the cart back with get_cart, state the exact total, ask 'Shall I place this order?', and tell them to tap the 'Yes, place order' button (typing yes is not enough). Then END your reply.");
   const order = checkout(sessionId);
   return { ok: true as const, orderId: order.id, status: "Received", cart: order.cart };
 }
@@ -122,7 +123,7 @@ export function buildTools(sessionId: string) {
       execute: async () => getCartTool(sessionId),
     }),
     place_order: tool({
-      description: "Place the order. Refused unless confirmed=true AND the customer was shown the current cart via get_cart.",
+      description: "Place the order. Refused unless confirmed=true AND the customer pressed the 'Yes, place order' button for the current cart.",
       inputSchema: placeOrderSchema,
       execute: async (args) => placeOrderTool(sessionId, args),
     }),

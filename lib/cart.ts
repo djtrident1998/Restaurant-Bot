@@ -26,6 +26,7 @@ interface Session {
   orders: Order[];
   version: number; // bumps on every cart change
   readBackVersion: number; // cart version the customer was last shown via get_cart
+  confirmedVersion: number; // cart version the customer confirmed by pressing the UI button (not the model)
   turn: number; // user-message counter
   readBackTurn: number; // turn in which that read-back happened
 }
@@ -36,7 +37,7 @@ const sessions = (g.__spiceSessions ??= new Map<string, Session>());
 function session(id: string): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { qty: new Map(), orders: [], version: 0, readBackVersion: -1, turn: 0, readBackTurn: -1 };
+    s = { qty: new Map(), orders: [], version: 0, readBackVersion: -1, confirmedVersion: -1, turn: 0, readBackTurn: -1 };
     sessions.set(id, s);
   }
   return s;
@@ -84,6 +85,24 @@ export function markReadBack(sessionId: string): void {
 export function isReadBackCurrent(sessionId: string): boolean {
   const s = session(sessionId);
   return s.readBackVersion === s.version && s.readBackTurn < s.turn;
+}
+
+/**
+ * Records that the customer pressed the "Yes, place order" button for the CURRENT cart. Only the
+ * /api/confirm HTTP route calls this — it is deliberately not exposed as a model tool, so the model
+ * cannot confirm on the customer's behalf. Any later cart change invalidates it.
+ */
+export function userConfirm(sessionId: string): boolean {
+  const s = session(sessionId);
+  if (s.qty.size === 0) return false;
+  s.confirmedVersion = s.version;
+  s.readBackVersion = s.version; // the cart panel on screen is the read-back
+  return true;
+}
+
+export function isUserConfirmed(sessionId: string): boolean {
+  const s = session(sessionId);
+  return s.qty.size > 0 && s.confirmedVersion === s.version;
 }
 
 export function checkout(sessionId: string): Order {

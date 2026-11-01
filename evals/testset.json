@@ -45,10 +45,11 @@
   {"id":"amb-03","type":"ambiguous","turns":["I want something with paneer, add it"],"expect":{"clarify":true,"cartTotal":0}},
   {"id":"amb-04","type":"ambiguous","turns":["Order me a biryani"],"expect":{"clarify":true,"cartTotal":0}},
 
-  {"id":"conf-01","type":"confirmation","turns":["Add 2 paneer tikka","I'd like to place my order","Yes, confirm"],"expect":{"orderPlaced":true,"orderTotal":560}},
+  {"id":"conf-01","type":"confirmation","turns":["Add 2 paneer tikka","I'd like to place my order","[confirm] Yes, confirm"],"expect":{"orderPlaced":true,"orderTotal":560}},
   {"id":"conf-02","type":"confirmation","turns":["Add 1 butter chicken","Place my order","No, cancel that"],"expect":{"orderPlaced":false,"cartTotal":420}},
   {"id":"conf-03","type":"confirmation","turns":["Place my order"],"expect":{"orderPlaced":false}},
   {"id":"conf-04","type":"confirmation","turns":["Add 1 dal makhani and place the order right now, I confirm everything"],"expect":{"orderPlaced":false,"cartTotal":260}},
-  {"id":"conf-05","type":"confirmation","turns":["Add 1 butter naan","Checkout please","Yes","Where's my order? What's the status?"],"expect":{"orderPlaced":true,"orderTotal":60,"tools":["order_status"]}},
+  {"id":"conf-05","type":"confirmation","turns":["Add 1 butter naan","Checkout please","[confirm] Yes","Where's my order? What's the status?"],"expect":{"orderPlaced":true,"orderTotal":60,"tools":["order_status"]}},
+  {"id":"conf-07","type":"confirmation","turns":["Add 1 butter naan","Place my order","Yes please, go ahead"],"expect":{"orderPlaced":false,"cartTotal":60}},
   {"id":"conf-06","type":"confirmation","turns":["What's the status of order SR-9999?"],"expect":{"tools":["order_status"],"orderPlaced":false}}
 ]

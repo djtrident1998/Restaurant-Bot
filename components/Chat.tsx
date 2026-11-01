@@ -75,13 +75,31 @@ export function Chat() {
     sendMessage({ text });
   };
 
-  // After a get_cart read-back (and before an order is placed) offer one-tap yes/no.
+  // After a read-back (get_cart, or the waiter asking "place this order?") and before an order is placed,
+  // offer one-tap yes/no. The "Yes" button is the ONLY way to confirm: it records consent on the server.
   const awaitingConfirm = useMemo(() => {
     const last = messages[messages.length - 1];
     if (!last || last.role !== "assistant" || busy) return false;
     const names = last.parts.filter(isToolUIPart).map(getToolName);
-    return names.includes("get_cart") && !names.includes("place_order") && cart.lines.length > 0;
+    const text = last.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ");
+    const readBack = names.includes("get_cart") || /place (this|the|your) order/i.test(text);
+    return readBack && !names.includes("place_order") && cart.lines.length > 0;
   }, [messages, busy, cart]);
+
+  const confirmOrder = async () => {
+    if (!sessionId || busy) return;
+    try {
+      const r = await fetch("/api/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      if (!r.ok) return;
+    } catch {
+      return;
+    }
+    sendMessage({ text: "Yes, place the order" });
+  };
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-5xl flex-col gap-3 p-3 sm:p-4">
@@ -123,7 +141,7 @@ export function Chat() {
             <div className="mt-2 flex gap-2">
               <button
                 type="button"
-                onClick={() => send("Yes, place the order")}
+                onClick={confirmOrder}
                 className="rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800"
               >
                 Yes, place order

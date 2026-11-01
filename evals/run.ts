@@ -6,7 +6,7 @@ import path from "node:path";
 import type { ModelMessage } from "ai";
 import { runAgent, getModelId, type ToolCallRecord } from "../lib/agent";
 import { collectToolAmounts, normalizeText } from "../lib/guardrails";
-import { resetSession } from "../lib/cart";
+import { resetSession, userConfirm } from "../lib/cart";
 import type { PromptVersion } from "../lib/prompt";
 
 // ---------- types ----------
@@ -106,8 +106,14 @@ async function runCase(c: Case, version: PromptVersion): Promise<CaseResult> {
   let blocked = false;
   let lastCart = { total: 0 };
 
-  for (const turn of c.turns) {
-    const r = await withRetry(() => runAgent({ sessionId, userText: turn, history, promptVersion: version, priorAmounts: amounts }));
+  for (let turn of c.turns) {
+    // "[confirm] ..." simulates the customer pressing the UI's "Yes, place order" button (POST /api/confirm).
+    if (turn.startsWith("[confirm] ")) {
+      userConfirm(sessionId);
+      turn = "Yes, place the order";
+    }
+    const userText = turn;
+    const r = await withRetry(() => runAgent({ sessionId, userText, history, promptVersion: version, priorAmounts: amounts }));
     history = r.messages;
     reply = r.reply;
     blocked = r.blockedByScope;

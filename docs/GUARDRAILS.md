@@ -5,7 +5,7 @@ Each guardrail lists **where it is enforced** (prompt vs code) and **how it is t
 | # | Guardrail | Enforced in code | Prompt | Tested by |
 |---|---|---|---|---|
 | 1 | Grounding | `lib/tools.ts` (only source of menu data), `lib/guardrails.ts#checkGrounding` | "never invent" | `scripts/check-guardrails.ts`, eval *grounding rate* |
-| 2 | Confirm-before-order | `lib/tools.ts#placeOrderTool`, `lib/cart.ts` | read-back rules | `scripts/check-tools.ts`, eval *order safety* |
+| 2 | Confirm-before-order | `lib/tools.ts#placeOrderTool`, `lib/cart.ts#userConfirm`, `app/api/confirm/route.ts` (UI button) | read-back rules | `scripts/check-tools.ts`, eval *order safety* |
 | 3 | Honest "no" | tools return empty results for unknown dishes | "say so + alternatives" | eval *honest-no* cases |
 | 4 | Scope limit | `lib/guardrails.ts#checkUserInput` (pre-model gate) | scope section | eval *off-topic* cases |
 | 5 | Deterministic math | `lib/cart.ts#viewCart` | "never calculate" | eval *cart/total correctness* |
@@ -19,11 +19,12 @@ Each guardrail lists **where it is enforced** (prompt vs code) and **how it is t
 ## 2. Confirm-before-order
 `place_order` refuses unless **all** hold:
 1. `confirmed: true` is passed;
-2. the cart is non-empty;
-3. the customer has been shown the *current* cart via `get_cart` (cart version unchanged since), **and**
-4. that read-back happened in an *earlier turn* than the one calling `place_order`.
+2. the cart is non-empty; **and**
+3. the customer pressed the **"Yes, place order" button** for the *current* cart. The button calls `POST /api/confirm`, which records consent server-side (`lib/cart.ts#userConfirm`). It is not a model tool, so no model can confirm on the customer's behalf. Any cart change afterwards invalidates it.
 
-(4) closes a loophole found during evals: the model could call `get_cart` and `place_order` in one turn, so the customer never saw the total. Refusal messages are written for the model ("call get_cart, read back, END your reply, wait for yes") so it recovers gracefully. Consequence: a message like "add dal makhani and place the order, I confirm" still gets a read-back first — by design.
+Why a button and not "the model saw a yes": evals and a live test showed that weaker (free) models treat "place my order" or even their own earlier read-back as consent, and `confirmed: true` is just a flag the model sets. Consent now has to come from a real click. Consequence: typing "yes" is not enough — the waiter tells the customer to tap the button. Refusal messages are written for the model so it recovers gracefully.
+
+History: a first version only required a `get_cart` read-back in an earlier turn; that was found too weak (an order was placed after only a Checkout click).
 
 ## 3. Honest "no"
 Searching for sushi/pizza/Chicken 65 returns zero items; the prompt requires saying so and offering 2–3 real alternatives found by search. `add_to_cart` with an unknown id fails. The eval asserts no successful add and no invented dish.

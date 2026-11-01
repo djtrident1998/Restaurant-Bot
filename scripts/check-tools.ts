@@ -1,5 +1,5 @@
 import { searchMenuTool, addToCartTool, getCartTool, placeOrderTool, orderStatusTool } from "../lib/tools";
-import { beginTurn } from "../lib/cart";
+import { beginTurn, userConfirm } from "../lib/cart";
 
 let fails = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -28,15 +28,17 @@ check("lines merge", c.ok && c.cart.lines.length === 2 && c.cart.total === 800);
 
 check("unconfirmed order refused", !placeOrderTool(S, { confirmed: false }).ok);
 check("missing confirmed arg refused", !placeOrderTool(S, {}).ok);
-check("confirmed but no read-back refused", !placeOrderTool(S, { confirmed: true }).ok);
+check("confirmed:true without button press refused", !placeOrderTool(S, { confirmed: true }).ok);
 const g = getCartTool(S);
 check("get_cart total 800", g.ok && g.cart.total === 800);
-check("read-back in SAME turn refused", !placeOrderTool(S, { confirmed: true }).ok);
-beginTurn(S); // customer replies in a new turn
-addToCartTool(S, { itemId: "bv-02", qty: 1 }); // cart changed after read-back
-check("stale read-back refused", !placeOrderTool(S, { confirmed: true }).ok);
-getCartTool(S);
-beginTurn(S); // customer says yes to the new read-back
+beginTurn(S);
+check("model read-back + typed yes (no button) refused", !placeOrderTool(S, { confirmed: true }).ok);
+check("button on empty cart rejected", !userConfirm("empty-session"));
+check("button press accepted", userConfirm(S));
+addToCartTool(S, { itemId: "bv-02", qty: 1 }); // cart changed AFTER the button press
+check("stale button press refused (cart changed)", !placeOrderTool(S, { confirmed: true }).ok);
+beginTurn(S);
+userConfirm(S); // customer presses the button for the new cart
 const o = placeOrderTool(S, { confirmed: true });
 check("confirmed order placed", o.ok && o.cart.total === 870 && /^SR-\d{4}$/.test(o.orderId), o.ok ? o.orderId : "");
 check("cart emptied after order", getCartTool(S).ok && (getCartTool(S) as any).cart.total === 0);
