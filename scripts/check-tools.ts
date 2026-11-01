@@ -1,4 +1,4 @@
-import { searchMenuTool, addToCartTool, getCartTool, placeOrderTool, orderStatusTool, modelViewSearch, modelViewCart, modelViewOrder } from "../lib/tools";
+﻿import { searchMenuTool, addToCartTool, getCartTool, placeOrderTool, orderStatusTool, modelViewSearch, modelViewCart, modelViewOrder } from "../lib/tools";
 import { beginTurn, userConfirm } from "../lib/cart";
 
 let fails = 0;
@@ -7,6 +7,7 @@ const check = (name: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name} ${detail}`);
 };
 const S = "test-session";
+const SIGNED_IN = { signedIn: true };
 beginTurn(S);
 
 const s1 = searchMenuTool({ query: "paneer", filters: { veg: true } });
@@ -26,24 +27,24 @@ check("cart total 740", b.ok && b.cart.total === 740 && b.cart.itemCount === 5);
 const c = addToCartTool(S, { itemId: "br-01", qty: 1 }); // merges -> 4 x 60
 check("lines merge", c.ok && c.cart.lines.length === 2 && c.cart.total === 800);
 
-check("unconfirmed order refused", !placeOrderTool(S, { confirmed: false }).ok);
-check("missing confirmed arg refused", !placeOrderTool(S, {}).ok);
-check("confirmed:true without button press refused", !placeOrderTool(S, { confirmed: true }).ok);
+check("unconfirmed order refused", !placeOrderTool(S, { confirmed: false }, SIGNED_IN).ok);
+check("missing confirmed arg refused", !placeOrderTool(S, {}, SIGNED_IN).ok);
+check("confirmed:true without button press refused", !placeOrderTool(S, { confirmed: true }, SIGNED_IN).ok);
 const g = getCartTool(S);
 check("get_cart total 800", g.ok && g.cart.total === 800);
 beginTurn(S);
-check("model read-back + typed yes (no button) refused", !placeOrderTool(S, { confirmed: true }).ok);
+check("model read-back + typed yes (no button) refused", !placeOrderTool(S, { confirmed: true }, SIGNED_IN).ok);
 check("button on empty cart rejected", !userConfirm("empty-session"));
 check("button press accepted", userConfirm(S));
 addToCartTool(S, { itemId: "bv-02", qty: 1 }); // cart changed AFTER the button press
-check("stale button press refused (cart changed)", !placeOrderTool(S, { confirmed: true }).ok);
+check("stale button press refused (cart changed)", !placeOrderTool(S, { confirmed: true }, SIGNED_IN).ok);
 beginTurn(S);
 userConfirm(S); // customer presses the button for the new cart
-const o = placeOrderTool(S, { confirmed: true });
+const o = placeOrderTool(S, { confirmed: true }, SIGNED_IN);
 check("confirmed order placed", o.ok && o.cart.total === 870 && /^SR-\d{4}$/.test(o.orderId), o.ok ? o.orderId : "");
 check("cart emptied after order", getCartTool(S).ok && (getCartTool(S) as any).cart.total === 0);
 beginTurn(S);
-check("empty cart order refused",!placeOrderTool(S, { confirmed: true }).ok);
+check("empty cart order refused",!placeOrderTool(S, { confirmed: true }, SIGNED_IN).ok);
 check("order status", o.ok && (orderStatusTool(S, { orderId: o.orderId }) as any).status === "Received");
 check("unknown order status fails", !orderStatusTool(S, { orderId: "SR-0000" }).ok);
 check("sessions isolated", (getCartTool("other") as any).cart.total === 0);
@@ -61,7 +62,20 @@ check("model view: error surfaced", /^Error:/.test(modelViewSearch(searchMenuToo
 const cv = modelViewCart({ ok: true, cart: { lines: [{ qty: 2, name: "Paneer Tikka", unitPrice: 280, lineTotal: 560 }], itemCount: 2, total: 560 } });
 check("model view: cart has line math and TOTAL", /2x Paneer Tikka @₹280=₹560; TOTAL ₹560/.test(cv), cv);
 check("model view: empty cart", /cart empty; TOTAL ₹0/.test(modelViewCart({ ok: true, cart: { lines: [], itemCount: 0, total: 0 } })));
-check("model view: refused order shows error text", /^Error: Order NOT placed/.test(modelViewOrder(placeOrderTool("view-test", { confirmed: true }) as never)));
+check("model view: refused order shows error text", /^Error: Order NOT placed/.test(modelViewOrder(placeOrderTool("view-test", { confirmed: true }, SIGNED_IN) as never)));
 check("UI output still has full descriptions", (searchMenuTool({ query: "paneer tikka" }) as { items: { description: string }[] }).items[0].description.length > 20);
 
+// ---- ordering requires an account (deny by default) ----
+const G = "guest-session";
+beginTurn(G);
+addToCartTool(G, { itemId: "st-01", qty: 1 });
+getCartTool(G);
+userConfirm(G); // even with consent recorded...
+check("guest cannot place an order (no opts)", !placeOrderTool(G, { confirmed: true }).ok);
+check("guest cannot place an order (signedIn: false)", !placeOrderTool(G, { confirmed: true }, { signedIn: false }).ok);
+check("guest refusal tells them to sign in", /sign in or create an account/i.test((placeOrderTool(G, { confirmed: true }) as { error: string }).error));
+check("guest order did not clear the cart", getCartTool(G).ok && (getCartTool(G) as any).cart.total === 280);
+check("the same cart CAN be ordered once signed in", placeOrderTool(G, { confirmed: true }, { signedIn: true }).ok);
+
 process.exit(fails ? 1 : 0);
+

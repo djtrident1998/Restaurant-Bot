@@ -29,6 +29,9 @@ History: a first version only required a `get_cart` read-back in an earlier turn
 ### Button-driven ordering is deterministic
 *Add to cart*, *Checkout* and *Yes, place order* send fixed messages that the chat route recognises (`lib/orderFlow.ts`) and answers with code — the same guarded tool functions, not the model. Totals are computed by code, the read-back lists every line, and `place_order` still refuses without the server-recorded button press. Free-text requests ("place my order", "yes") still go to the model and still cannot place an order without the button.
 
+### Ordering requires an account
+`place_order` is **deny-by-default**: it refuses unless the caller passes `signedIn: true`, which the chat route derives from the verified session cookie — never from anything the browser or the model sends. The same check covers the deterministic buttons, the AI's `place_order` tool and the confirm-button endpoint (`PUT /api/chat` returns 401 to guests). Guests can still browse and fill a cart; the server keeps it, so signing in in the same tab continues where they left off.
+
 ### Accounts
 Passwords are hashed with salted **scrypt** and compared in constant time; sign-in answers "Incorrect email or password" for both unknown email and wrong password (and does the same amount of work), so accounts can't be probed. Sessions are an HMAC-signed token in an `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookie that expires after 7 days. Sign-in and sign-up are rate-limited (8 attempts / 10 minutes per IP+email). Orders are saved to the account only after a turn succeeds, so a model failover/retry can never record an order twice.
 

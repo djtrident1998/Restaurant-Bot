@@ -42,14 +42,12 @@ function staticReply(text: string, outputs: StaticOutput[] = []) {
  * account. Done after a turn succeeds, never inside a tool, so a failed model attempt that is rolled back and
  * retried can never record an order twice.
  */
-async function saveOrdersToAccount(sessionId: string, before: number): Promise<void> {
+async function saveOrdersToAccount(sessionId: string, before: number, userId: string | undefined): Promise<void> {
   const placed = getOrders(sessionId).slice(before);
-  if (!placed.length) return;
+  if (!placed.length || !userId) return;
   try {
-    const user = await getCurrentUser();
-    if (!user) return;
     for (const o of placed)
-      await getStore().addOrder(user.id, {
+      await getStore().addOrder(userId, {
         id: o.id,
         total: o.cart.total,
         placedAt: o.placedAt,
@@ -88,11 +86,15 @@ export async function POST(req: Request) {
 
   // The ordering buttons are deterministic too: Add to cart, Checkout and "Yes, place order" are answered by code
   // (same guarded tools, totals and confirm-button rule as the model path) — instant, free, and independent of AI outages.
+  // Ordering requires an account: the signed-in user comes from the verified session cookie, never from the client.
+  const user = await getCurrentUser();
+  const signedIn = !!user;
+
   const orderIntent = detectOrderIntent(userText);
   if (orderIntent) {
     const ordersBefore = getOrders(sessionId).length;
-    const result = handleOrderIntent(sessionId, orderIntent);
-    await saveOrdersToAccount(sessionId, ordersBefore);
+    const result = handleOrderIntent(sessionId, orderIntent, signedIn);
+    await saveOrdersToAccount(sessionId, ordersBefore, user?.id);
     return staticReply(result.text, result.outputs);
   }
 
@@ -105,7 +107,7 @@ export async function POST(req: Request) {
   beginTurn(sessionId);
   const snapshot = snapshotSession(sessionId);
   // Passing the tools lets older tool results in the history use their compact model-facing view (toModelOutput).
-  const modelMessages = await convertToModelMessages(messages, { tools: buildTools(sessionId) });
+  const modelMessages = await convertToModelMessages(messages, { tools: buildTools(sessionId, signedIn) });
 
   // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
   // configured backup is tried invisibly, and the failed one is skipped for a couple of minutes.
@@ -120,7 +122,7 @@ export async function POST(req: Request) {
           candidates,
           (c, isLast) =>
             streamText({
-              ...agentConfig(sessionId, undefined, buildModel(c)),
+              ...agentConfig(sessionId, undefined, buildModel(c), signedIn),
               messages: modelMessages,
               maxRetries: isLast ? 1 : 0, // fail fast on all but the last so a backup is tried quickly
               // Time budget (function limit is 60s): a stuck model must not freeze the reply.
@@ -149,7 +151,7 @@ export async function POST(req: Request) {
         );
 
         // Only after the turn succeeded (a failed attempt is rolled back and retried, so it must not have saved anything).
-        if (winner) await saveOrdersToAccount(sessionId, snapshot.orders.length);
+        if (winner) await saveOrdersToAccount(sessionId, snapshot.orders.length, user?.id);
       },
     }),
   });
@@ -167,6 +169,8 @@ export async function PUT(req: Request) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
   if (!/^[\w-]{8,64}$/.test(sessionId)) return Response.json({ error: "bad sessionId" }, { status: 400 });
+  // Only a signed-in customer can give consent to place an order.
+  if (!(await getCurrentUser())) return Response.json({ ok: false, error: "Please sign in to place an order." }, { status: 401 });
   if (!userConfirm(sessionId)) return Response.json({ ok: false, error: "Your cart is empty." }, { status: 409 });
   return Response.json({ ok: true, cart: viewCart(sessionId) });
 }

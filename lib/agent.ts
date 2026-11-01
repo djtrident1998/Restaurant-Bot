@@ -23,11 +23,16 @@ export function getPromptVersion(): PromptVersion {
 }
 
 /** Shared config used by BOTH the streaming route and the headless eval runner. */
-export function agentConfig(sessionId: string, promptVersion: PromptVersion = getPromptVersion(), model: LanguageModel = getModel()) {
+export function agentConfig(
+  sessionId: string,
+  promptVersion: PromptVersion = getPromptVersion(),
+  model: LanguageModel = getModel(),
+  signedIn = false,
+) {
   return {
     model,
     system: getSystemPrompt(promptVersion),
-    tools: buildTools(sessionId),
+    tools: buildTools(sessionId, signedIn),
     stopWhen: isStepCount(MAX_STEPS),
     // Replies are short. Capping output also shrinks what Groq reserves against its tokens-per-minute limit
     // (it counts input + max output per request), so more turns fit in the free tier.
@@ -59,6 +64,8 @@ export async function runAgent(opts: {
   history?: ModelMessage[];
   promptVersion?: PromptVersion;
   priorAmounts?: Iterable<number>;
+  /** The eval harness simulates a signed-in customer by default (the production route passes the real session). */
+  signedIn?: boolean;
 }): Promise<AgentRun & { messages: ModelMessage[] }> {
   const { sessionId, userText, history = [], promptVersion } = opts;
   const gate = checkUserInput(userText);
@@ -76,7 +83,7 @@ export async function runAgent(opts: {
 
   beginTurn(sessionId);
   const result = await generateText({
-    ...agentConfig(sessionId, promptVersion),
+    ...agentConfig(sessionId, promptVersion, undefined, opts.signedIn ?? true),
     messages: [...history, userMsg],
   });
 

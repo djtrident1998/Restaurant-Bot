@@ -3,7 +3,9 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, getToolName, isToolUIPart } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CHECKOUT_TEXT, CONFIRM_TEXT, addRequestText } from "@/lib/chatMessages";
+import Link from "next/link";
+import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_MARKER, addRequestText } from "@/lib/chatMessages";
+import { AuthPrompt } from "./AuthPrompt";
 import { COURSES, COURSE_ASK_MARKER, courseRequestText } from "@/lib/courseData";
 import { CartPanel, type CartViewData } from "./CartPanel";
 import { DietChip } from "./DietChip";
@@ -33,11 +35,19 @@ function CoursePicker({ onPick, disabled, title }: { onPick: (text: string) => v
   );
 }
 
-export function Chat({ userName }: { userName?: string }) {
+export interface LastOrder {
+  id: string;
+  total: number;
+  placedAt: number;
+  items: string; // e.g. "2 × Chana Masala, 3 × Tandoori Roti"
+}
+
+export function Chat({ userName, signedIn = false, lastOrder }: { userName?: string; signedIn?: boolean; lastOrder?: LastOrder }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
   const [input, setInput] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
+  const [guestTriedCheckout, setGuestTriedCheckout] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,8 +117,11 @@ export function Chat({ userName }: { userName?: string }) {
     const placed = last.parts.some(
       (p) => isToolUIPart(p) && getToolName(p) === "place_order" && p.state === "output-available" && (p.output as { ok?: boolean } | undefined)?.ok === true,
     );
-    return readBack && !placed && cart.lines.length > 0;
-  }, [last, lastText, busy, cart]);
+    return signedIn && readBack && !placed && cart.lines.length > 0;
+  }, [last, lastText, busy, cart, signedIn]);
+
+  // Guests can browse and fill a cart, but must sign in to order: show Sign in / Create account instead of a Yes button.
+  const needsSignIn = !signedIn && (guestTriedCheckout || (!busy && last?.role === "assistant" && lastText.toLowerCase().includes(SIGN_IN_MARKER)));
 
   const confirmOrder = async () => {
     if (!sessionId || busy) return;
@@ -144,6 +157,32 @@ export function Chat({ userName }: { userName?: string }) {
                 <p className="mt-2 max-w-xl text-sm text-muted">
                   I&apos;m your waiter for the evening. Tell me what you&apos;re in the mood for, or let me guide you through the menu.
                 </p>
+                {signedIn && lastOrder && (
+                  <div className="mt-4 rounded-xl border border-line bg-black/30 p-3 text-sm">
+                    <p className="text-xs uppercase tracking-[0.25em] text-gold">Your last order</p>
+                    <p className="mt-1 text-ivory">
+                      <span className="font-mono">{lastOrder.id}</span> · ₹{lastOrder.total}
+                      <span className="text-muted"> · {new Date(lastOrder.placedAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}</span>
+                    </p>
+                    <p className="text-muted">{lastOrder.items}</p>
+                    <Link href="/account" className="mt-1 inline-block text-gold-soft underline-offset-4 hover:underline">
+                      See all your orders
+                    </Link>
+                  </div>
+                )}
+                {!signedIn && (
+                  <p className="mt-4 text-sm text-muted">
+                    Browse and fill your cart freely.{" "}
+                    <Link href="/login" className="text-gold-soft underline-offset-4 hover:underline">
+                      Sign in
+                    </Link>{" "}
+                    or{" "}
+                    <Link href="/signup" className="text-gold-soft underline-offset-4 hover:underline">
+                      create an account
+                    </Link>{" "}
+                    when you&apos;re ready to order.
+                  </p>
+                )}
                 <div className="mt-5">
                   <CoursePicker title="What would you like to begin with?" onPick={send} disabled={!sessionId || busy} />
                 </div>
@@ -159,6 +198,12 @@ export function Chat({ userName }: { userName?: string }) {
           {courseAsking && (
             <div className="mt-3 rounded-xl border border-line bg-panel2 p-3">
               <CoursePicker title="Choose a course" onPick={send} disabled={busy} />
+            </div>
+          )}
+
+          {needsSignIn && (
+            <div className="mt-3">
+              <AuthPrompt />
             </div>
           )}
 
@@ -205,8 +250,13 @@ export function Chat({ userName }: { userName?: string }) {
           <CartPanel
             cart={cart}
             disabled={busy}
+            signedIn={signedIn}
             onCheckout={() => {
               setCartOpen(false);
+              if (!signedIn) {
+                setGuestTriedCheckout(true); // no round trip needed: ordering requires an account
+                return;
+              }
               send(CHECKOUT_TEXT);
             }}
           />

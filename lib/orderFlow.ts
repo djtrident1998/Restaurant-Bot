@@ -4,7 +4,7 @@
 import { MENU } from "./menu";
 import { viewCart } from "./cart";
 import { addToCartTool, getCartTool, placeOrderTool } from "./tools";
-import { CHECKOUT_TEXT, CONFIRM_TEXT } from "./chatMessages";
+import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_TEXT } from "./chatMessages";
 
 export type OrderIntent = { type: "add"; itemId: string; name: string; qty: number } | { type: "checkout" } | { type: "confirm" } | null;
 
@@ -31,7 +31,17 @@ export function detectOrderIntent(text: string): OrderIntent {
 const bullets = (cart: { lines: { qty: number; name: string; lineTotal: number }[] }) =>
   cart.lines.map((l) => `- ${l.qty} × ${l.name} — ₹${l.lineTotal}`).join("\n");
 
-export function handleOrderIntent(sessionId: string, intent: NonNullable<OrderIntent>): { text: string; outputs: StaticOutput[] } {
+export function handleOrderIntent(
+  sessionId: string,
+  intent: NonNullable<OrderIntent>,
+  signedIn = false,
+): { text: string; outputs: StaticOutput[] } {
+  // Browsing and filling a cart is open to everyone; checking out requires an account.
+  if (!signedIn && (intent.type === "checkout" || intent.type === "confirm")) {
+    const empty = viewCart(sessionId).lines.length === 0;
+    return { text: empty ? "Your order is empty. Choose a course and add a dish to begin." : SIGN_IN_TEXT, outputs: [] };
+  }
+
   if (intent.type === "add") {
     const r = addToCartTool(sessionId, { itemId: intent.itemId, qty: intent.qty });
     if (!r.ok) return { text: `Sorry — ${r.error}`, outputs: [] };
@@ -48,7 +58,7 @@ export function handleOrderIntent(sessionId: string, intent: NonNullable<OrderIn
   }
 
   // confirm: only succeeds if the customer pressed the button (server-recorded consent for this exact cart).
-  const r = placeOrderTool(sessionId, { confirmed: true });
+  const r = placeOrderTool(sessionId, { confirmed: true }, { signedIn });
   if (r.ok) {
     return {
       text: `Your order is placed. Your order ID is **${r.orderId}**. Thank you for dining with Spice Route.`,

@@ -11,7 +11,17 @@ export interface CartViewData {
   total: number;
 }
 
-export function CartPanel({ cart, onCheckout, disabled }: { cart: CartViewData; onCheckout: () => void; disabled?: boolean }) {
+export function CartPanel({
+  cart,
+  onCheckout,
+  disabled,
+  signedIn = false,
+}: {
+  cart: CartViewData;
+  onCheckout: () => void;
+  disabled?: boolean;
+  signedIn?: boolean;
+}) {
   return (
     <aside aria-label="Your cart" className="card flex h-full flex-col p-4">
       <h2 className="font-display text-xl text-gold-soft">Your order</h2>
@@ -46,7 +56,7 @@ export function CartPanel({ cart, onCheckout, disabled }: { cart: CartViewData; 
           onClick={onCheckout}
           className="btn-gold mt-3 w-full px-3 py-2.5 text-sm"
         >
-          Checkout
+          {signedIn ? "Checkout" : "Sign in to checkout"}
         </button>
       </div>
     </aside>

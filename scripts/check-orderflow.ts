@@ -8,9 +8,9 @@ const check = (name: string, ok: boolean, detail = "") => {
   if (!ok) fails++;
   console.log(`${ok ? "PASS" : "FAIL"}  ${name} ${detail}`);
 };
-const run = (sid: string, text: string) => {
+const run = (sid: string, text: string, signedIn = true) => {
   const intent = detectOrderIntent(text);
-  return intent ? handleOrderIntent(sid, intent) : null;
+  return intent ? handleOrderIntent(sid, intent, signedIn) : null;
 };
 
 const S = "flow-test-session";
@@ -58,6 +58,19 @@ run(T, addRequestText("Butter Naan", 1));
 userConfirm(T);
 run(T, addRequestText("Mango Lassi", 1)); // cart changed AFTER consent
 check("consent is voided when the cart changes", /tap the/i.test(run(T, CONFIRM_TEXT)!.text) && getOrders(T).length === 0);
+
+// --- guests: browse and fill a cart, but cannot check out or order ---
+const G = "flow-test-guest";
+check("guest CAN add to cart", /Added 1 × \*\*Paneer Tikka/.test(run(G, addRequestText("Paneer Tikka"), false)!.text) && viewCart(G).total === 280);
+const gco = run(G, CHECKOUT_TEXT, false)!;
+check("guest checkout asks them to sign in or create an account", /sign in or create an account/i.test(gco.text) && getOrders(G).length === 0);
+check("guest checkout does not mark the cart as read back / confirmed", !/Total: ₹/.test(gco.text));
+userConfirm(G); // consent recorded...
+const gconf = run(G, CONFIRM_TEXT, false)!;
+check("guest 'Yes, place the order' is refused even with consent recorded", /sign in or create an account/i.test(gconf.text) && getOrders(G).length === 0 && viewCart(G).total === 280);
+check("guest cart is kept (they can sign in and come back to it)", viewCart(G).total === 280);
+check("the same cart can be ordered once signed in", /SR-\d{4}/.test(run(G, CONFIRM_TEXT, true)!.text) && getOrders(G).length === 1);
+check("guest with an empty cart is told it's empty, not asked to sign in", /empty/i.test(run("flow-test-guest-empty", CHECKOUT_TEXT, false)!.text));
 
 // --- sessions are isolated ---
 check("another session's cart is untouched", viewCart("flow-test-other").total === 0);

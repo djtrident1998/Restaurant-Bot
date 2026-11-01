@@ -11,7 +11,7 @@ On a 46-case labeled eval, tuning the prompt (v1 → v2) took **hallucination fr
 ## Features
 - **Luxury landing page** with a hero photo of the dining room, signature dishes and an "order now" call to action.
 - **Course-by-course menu:** ask for the menu and the waiter asks *Starters, Main Course, Breads & Rice, Desserts or Drinks?* — each course shows dishes with photos, prices, diet marks and allergens. Built straight from the menu data, so it is instant and uses no AI.
-- **Accounts:** create an account or sign in (email + password, salted scrypt hashes, signed HttpOnly session cookie). Signed-in customers are greeted by name and see their past orders under *Account*. Ordering also works as a guest.
+- **Accounts, required to order:** guests can browse and fill a cart, but checking out asks them to sign in or create an account first (their cart is kept). Email + password, salted scrypt hashes, signed HttpOnly session cookie. Returning customers are greeted by name, see their last order in the ordering room, and the full history under *Account*.
 - **Button-driven ordering without the AI:** *Add to cart*, *Checkout* and *Yes, place order* are handled by code (same guarded tools), so they are instant and keep working when every AI model is rate-limited. The AI handles free-form questions.
 
 ## Stack

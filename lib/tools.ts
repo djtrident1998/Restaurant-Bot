@@ -81,9 +81,14 @@ export function getCartTool(sessionId: string, raw: unknown = {}) {
   return { ok: true as const, cart: viewCart(sessionId) };
 }
 
-export function placeOrderTool(sessionId: string, raw: unknown) {
+export const SIGN_IN_REQUIRED =
+  "Order NOT placed: the customer must sign in or create an account before ordering. Tell them to use Sign in / Create account (top right) — their cart will be kept — and then check out.";
+
+/** Deny by default: an order can only be placed for a signed-in customer (`signedIn` comes from the verified session cookie). */
+export function placeOrderTool(sessionId: string, raw: unknown, opts: { signedIn?: boolean } = {}) {
   const p = placeOrderSchema.safeParse(raw);
   if (!p.success) return err(`Invalid arguments: ${p.error.issues.map((i) => i.message).join("; ")}`);
+  if (!opts.signedIn) return err(SIGN_IN_REQUIRED);
   if (!p.data.confirmed)
     return err("Order NOT placed: customer has not confirmed. Read back the cart with get_cart, state the total, and ask for an explicit yes.");
   if (viewCart(sessionId).lines.length === 0) return err("Order NOT placed: the cart is empty.");
@@ -156,7 +161,7 @@ const asText = (value: string) => ({ type: "text" as const, value });
 
 // ---- AI SDK bindings ----
 
-export function buildTools(sessionId: string) {
+export function buildTools(sessionId: string, signedIn = false) {
   return {
     search_menu: tool({
       description: "Search the menu. The only source of dishes, prices, spice and allergens.",
@@ -177,9 +182,9 @@ export function buildTools(sessionId: string) {
       toModelOutput: ({ output }) => asText(modelViewCart(output as Loose)),
     }),
     place_order: tool({
-      description: "Place the order. Refused unless the customer pressed the Yes button for the current cart.",
+      description: "Place the order. Refused unless the customer is signed in and pressed the Yes button for the current cart.",
       inputSchema: placeOrderSchema,
-      execute: async (args) => placeOrderTool(sessionId, args),
+      execute: async (args) => placeOrderTool(sessionId, args, { signedIn }),
       toModelOutput: ({ output }) => asText(modelViewOrder(output as Loose)),
     }),
     order_status: tool({
