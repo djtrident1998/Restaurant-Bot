@@ -17,13 +17,13 @@ npm install
 cp .env.example .env.local   # then fill in your key
 npm run dev                  # http://localhost:3000
 ```
-`.env.local` (free Groq model by default):
+`.env.local` (Claude Haiku by default):
 ```
-MODEL_PROVIDER=groq
-MODEL_ID=openai/gpt-oss-120b
-GROQ_API_KEY=your-key
+MODEL_PROVIDER=anthropic
+MODEL_ID=claude-haiku-5-5
+ANTHROPIC_API_KEY=your-key
 ```
-Other providers: `google` (`GOOGLE_GENERATIVE_AI_API_KEY`, e.g. `gemini-2.5-flash`) or `anthropic` (`ANTHROPIC_API_KEY`, e.g. `claude-sonnet-5-5`). Keys are read server-side only and `.env*` is gitignored. See [free model notes](docs/FREE_MODEL_NOTES.md).
+Other providers: `groq` (`GROQ_API_KEY`, free but about 200k tokens/day, e.g. `openai/gpt-oss-120b`) or `google` (`GOOGLE_GENERATIVE_AI_API_KEY`, e.g. `gemini-2.5-flash`). Public demo caps: 40 messages/visitor/day, 300/day overall. Keys are read server-side only and `.env*` is gitignored. See [free model notes](docs/FREE_MODEL_NOTES.md).
 
 ## Scripts
 | Command | What it does |

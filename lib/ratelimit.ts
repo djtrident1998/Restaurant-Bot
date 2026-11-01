@@ -4,8 +4,9 @@ const g = globalThis as unknown as { __spiceHits?: Map<string, number[]>; __spic
 const hits = (g.__spiceHits ??= new Map<string, number[]>());
 
 export const PER_MINUTE = 12;
-export const PER_DAY = 150;
-export const GLOBAL_PER_DAY = 1500;
+// Paid model: caps double as a cost ceiling (each message is ~2-3 model calls of ~2.5k input tokens).
+export const PER_DAY = 40;
+export const GLOBAL_PER_DAY = 300;
 
 export function checkRateLimit(key: string, now = Date.now()): { ok: true } | { ok: false; reason: string } {
   const day = new Date(now).toISOString().slice(0, 10);
