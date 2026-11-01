@@ -34,8 +34,9 @@ export async function streamWithFailover<C extends Chunk>(
     let failure: unknown = null;
     try {
       for await (const chunk of attempt(c, i === candidates.length - 1)) {
-        if (chunk.type === "error") {
-          failure = chunk.errorText ?? "provider error";
+        if (chunk.type === "error" || chunk.type === "abort") {
+          // "abort" = the per-attempt time limit fired; treat a stuck model like a failed one.
+          failure = chunk.errorText ?? (chunk.type === "abort" ? "attempt timed out" : "provider error");
           break;
         }
         buffer.push(chunk);

@@ -122,5 +122,17 @@ async function run(models: Record<string, ReturnType<typeof goodModel>>, candida
   check("failed attempt rolled back: cart has exactly 2, not 4", winner?.provider === "google" && viewCart(SID).total === 560 && viewCart(SID).itemCount === 2, `total ${viewCart(SID).total}`);
   check("attempt order groq then google", attempts.join() === "groq,google");
 
+  // A timed-out attempt ("abort" chunk) must count as a failure, not be flushed as a success.
+  const outAbort: string[] = [];
+  const w2 = await streamWithFailover(
+    chain,
+    (c) => (async function* () {
+      if (c.provider === "groq") { yield { type: "text-delta", delta: "half" }; yield { type: "abort" }; }
+      else yield { type: "text-delta", delta: "full" };
+    })(),
+    (ch) => outAbort.push(ch.type === "text-delta" ? (ch as { delta: string }).delta : ch.type),
+  );
+  check("timed-out attempt falls over, partial discarded", w2?.provider === "google" && outAbort.join() === "full", outAbort.join());
+
   process.exit(fails ? 1 : 0);
 })();

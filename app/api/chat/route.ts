@@ -56,6 +56,10 @@ export async function POST(req: Request) {
 
   // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
   // configured backup is tried invisibly, and the failed one is skipped for a couple of minutes.
+  // The UI stream masks error text ("An error occurred."), so keep the real provider error for logs/cooldowns.
+  const realErrors = new Map<string, unknown>();
+  const keyOf = (c: { provider: string; id: string }) => `${c.provider}:${c.id}`;
+
   return createUIMessageStreamResponse({
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
@@ -65,8 +69,12 @@ export async function POST(req: Request) {
             streamText({
               ...agentConfig(sessionId, undefined, buildModel(c)),
               messages: modelMessages,
-              maxRetries: isLast ? 2 : 0, // fail fast on all but the last so a backup is tried quickly
-              onError: () => {}, // failures are handled by the failover wrapper
+              maxRetries: isLast ? 1 : 0, // fail fast on all but the last so a backup is tried quickly
+              // Time budget (function limit is 60s): a stuck model must not freeze the reply.
+              abortSignal: AbortSignal.timeout(isLast ? 28_000 : 14_000),
+              onError: ({ error }) => {
+                realErrors.set(keyOf(c), error);
+              },
               onFinish: ({ text, steps }) => {
                 const results = steps.flatMap((s) => s.toolResults.map((r) => (r as { output?: unknown }).output));
                 const g = checkGrounding(text, collectToolAmounts([...results, viewCart(sessionId)]));
@@ -78,8 +86,9 @@ export async function POST(req: Request) {
             // A failed attempt may already have added to the cart etc.; roll back so the next model starts clean.
             beforeAttempt: () => restoreSession(sessionId, snapshot),
             onFail: (c, e) => {
-              markFailed(c, Date.now(), cooldownFor(e));
-              console.warn(`[failover] ${c.provider}:${c.id} failed, trying next`, String(e).slice(0, 200));
+              const real = realErrors.get(keyOf(c)) ?? e;
+              markFailed(c, Date.now(), cooldownFor(String(real)));
+              console.warn(`[failover] ${c.provider}:${c.id} failed, trying next:`, String(real).slice(0, 300));
             },
           },
         );
