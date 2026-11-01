@@ -17,13 +17,14 @@ npm install
 cp .env.example .env.local   # then fill in your key
 npm run dev                  # http://localhost:3000
 ```
-`.env.local` (Claude Haiku by default):
+`.env.local` — an ordered chain of models with automatic failover:
 ```
-MODEL_PROVIDER=anthropic
-MODEL_ID=claude-haiku-5-5
-ANTHROPIC_API_KEY=your-key
+MODEL_CHAIN=groq:openai/gpt-oss-120b,google:gemini-2.5-flash,anthropic:claude-haiku-5-5
+GROQ_API_KEY=...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+ANTHROPIC_API_KEY=...
 ```
-Other providers: `groq` (`GROQ_API_KEY`, free but about 200k tokens/day, e.g. `openai/gpt-oss-120b`) or `google` (`GOOGLE_GENERATIVE_AI_API_KEY`, e.g. `gemini-2.5-flash`). Public demo caps: 40 messages/visitor/day, 300/day overall. Keys are read server-side only and `.env*` is gitignored. See [free model notes](docs/FREE_MODEL_NOTES.md).
+Free models go first, paid Haiku last. If a model fails before answering (rate limit, no credits, outage) the next one is used invisibly and the failed one is skipped for 2–10 minutes, then tried first again — so traffic returns to the free tiers as soon as they refresh. Providers with no key are skipped. Single model instead: `MODEL_PROVIDER` + `MODEL_ID`. Public demo caps: 40 messages/visitor/day, 300/day overall. Keys are read server-side only and `.env*` is gitignored. See [free model notes](docs/FREE_MODEL_NOTES.md).
 
 ## Scripts
 | Command | What it does |

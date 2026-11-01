@@ -1,7 +1,5 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
-import { groq } from "@ai-sdk/groq";
-import { generateText, isStepCount, type ModelMessage } from "ai";
+import { generateText, isStepCount, type LanguageModel, type ModelMessage } from "ai";
+import { buildModel, getChain } from "./models";
 import { buildTools } from "./tools";
 import { getSystemPrompt, type PromptVersion } from "./prompt";
 import { checkGrounding, checkUserInput, collectToolAmounts, SCOPE_DECLINE, type GroundingResult } from "./guardrails";
@@ -9,23 +7,14 @@ import { beginTurn, viewCart, type CartView } from "./cart";
 
 export const MAX_STEPS = 8;
 
+/** The primary model id (first entry of MODEL_CHAIN, or MODEL_ID). */
 export function getModelId(): string {
-  const id = process.env.MODEL_ID;
-  if (!id) throw new Error("MODEL_ID env var is not set");
-  return id;
+  return getChain()[0].id;
 }
 
-/** MODEL_PROVIDER=groq (default, free tier) | google | anthropic. MODEL_ID picks the model. */
-export function getModel() {
-  const id = getModelId();
-  switch (process.env.MODEL_PROVIDER) {
-    case "anthropic":
-      return anthropic(id);
-    case "google":
-      return google(id);
-    default:
-      return groq(id);
-  }
+/** The primary model. The streaming route additionally fails over to the rest of MODEL_CHAIN (see lib/failover.ts). */
+export function getModel(): LanguageModel {
+  return buildModel(getChain()[0]);
 }
 
 export function getPromptVersion(): PromptVersion {
@@ -33,9 +22,9 @@ export function getPromptVersion(): PromptVersion {
 }
 
 /** Shared config used by BOTH the streaming route and the headless eval runner. */
-export function agentConfig(sessionId: string, promptVersion: PromptVersion = getPromptVersion()) {
+export function agentConfig(sessionId: string, promptVersion: PromptVersion = getPromptVersion(), model: LanguageModel = getModel()) {
   return {
-    model: getModel(),
+    model,
     system: getSystemPrompt(promptVersion),
     tools: buildTools(sessionId),
     stopWhen: isStepCount(MAX_STEPS),

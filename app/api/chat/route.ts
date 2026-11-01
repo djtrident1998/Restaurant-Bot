@@ -1,5 +1,7 @@
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from "ai";
 import { agentConfig } from "@/lib/agent";
+import { streamWithFailover } from "@/lib/failover";
+import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
 import { beginTurn, viewCart } from "@/lib/cart";
 import { checkRateLimit } from "@/lib/ratelimit";
@@ -45,19 +47,40 @@ export async function POST(req: Request) {
     });
   }
 
-  beginTurn(sessionId);
-  const config = agentConfig(sessionId);
-  const result = streamText({
-    ...config,
-    messages: await convertToModelMessages(messages),
-    onFinish: ({ text, steps }) => {
-      const results = steps.flatMap((s) => s.toolResults.map((r) => (r as { output?: unknown }).output));
-      const g = checkGrounding(text, collectToolAmounts([...results, viewCart(sessionId)]));
-      if (!g.ok) console.warn("[grounding] flagged reply", JSON.stringify(g));
-    },
-  });
+  const candidates = availableCandidates(getChain());
+  if (candidates.length === 0) return Response.json({ error: "No AI provider is configured." }, { status: 503 });
 
-  return result.toUIMessageStreamResponse();
+  beginTurn(sessionId);
+  const modelMessages = await convertToModelMessages(messages);
+
+  // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
+  // configured backup is tried invisibly, and the failed one is skipped for a couple of minutes.
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream({
+      execute: async ({ writer }) => {
+        await streamWithFailover(
+          candidates,
+          (c, isLast) =>
+            streamText({
+              ...agentConfig(sessionId, undefined, buildModel(c)),
+              messages: modelMessages,
+              maxRetries: isLast ? 2 : 0, // fail fast on all but the last so a backup is tried quickly
+              onError: () => {}, // failures are handled by the failover wrapper
+              onFinish: ({ text, steps }) => {
+                const results = steps.flatMap((s) => s.toolResults.map((r) => (r as { output?: unknown }).output));
+                const g = checkGrounding(text, collectToolAmounts([...results, viewCart(sessionId)]));
+                if (!g.ok) console.warn("[grounding] flagged reply", JSON.stringify(g));
+              },
+            }).toUIMessageStream(),
+          (chunk) => writer.write(chunk as Parameters<typeof writer.write>[0]),
+          (c, e) => {
+            markFailed(c, Date.now(), cooldownFor(e));
+            console.warn(`[failover] ${c.provider}:${c.id} failed, trying next`, String(e).slice(0, 200));
+          },
+        );
+      },
+    }),
+  });
 }
 
 // Lets the UI's cart panel read the authoritative cart without going through the model.
