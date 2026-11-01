@@ -10,6 +10,7 @@ import { COURSES, COURSE_ASK_MARKER, courseRequestText } from "@/lib/courseData"
 import { CartPanel, type CartViewData } from "./CartPanel";
 import { DietChip } from "./DietChip";
 import { MessageList } from "./MessageList";
+import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
 
 const EMPTY_CART: CartViewData = { lines: [], itemCount: 0, total: 0 };
@@ -100,6 +101,16 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
     if (!sessionId || busy || !text.trim()) return;
     sendMessage({ text });
   };
+
+  // Voice: speak your question; the words appear in the box as you talk and are sent when you finish.
+  const voice = useVoiceInput({
+    onInterim: setInput,
+    onFinal: (t) => {
+      setInput("");
+      send(t);
+    },
+    onLeftover: setInput, // stopped early: keep what was heard so you can edit or send it
+  });
 
   const last = messages[messages.length - 1];
   const lastText = last?.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ") ?? "";
@@ -225,10 +236,18 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
             ))}
           </div>
 
+          {(voice.listening || voice.error) && (
+            <p role="status" className={`mt-2 flex items-center gap-2 text-sm ${voice.error ? "text-red-300" : "text-gold-soft"}`}>
+              {voice.listening && !voice.error && <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-gold" aria-hidden />}
+              {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
+            </p>
+          )}
+
           <form
             className="mt-2 flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
+              if (voice.listening) voice.stop();
               send(input);
               setInput("");
             }}
@@ -236,10 +255,25 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about a dish, or tell me what you fancy…"
+              placeholder={voice.listening ? "Listening…" : "Ask about a dish, or tell me what you fancy…"}
               maxLength={1000}
               className="min-w-0 flex-1 rounded-full border border-line bg-ink px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold"
             />
+            <button
+              type="button"
+              onClick={voice.listening ? voice.stop : voice.start}
+              disabled={busy || !sessionId}
+              aria-pressed={voice.listening}
+              aria-label={voice.listening ? "Stop listening" : "Speak your question"}
+              title={voice.supported ? (voice.listening ? "Stop listening" : "Speak your question") : "Voice input isn't available in this browser"}
+              className={`btn-ghost flex h-11 w-11 shrink-0 items-center justify-center ${voice.listening ? "mic-listening" : "text-gold-soft"} ${!voice.supported ? "opacity-50" : ""}`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </svg>
+            </button>
             <button type="submit" disabled={busy || !sessionId || !input.trim()} className="btn-gold px-5 py-2.5 text-sm">
               Send
             </button>

@@ -12,6 +12,7 @@ On a 46-case labeled eval, tuning the prompt (v1 → v2) took **hallucination fr
 - **Luxury landing page** with a hero photo of the dining room, signature dishes and an "order now" call to action.
 - **Course-by-course menu:** ask for the menu and the waiter asks *Starters, Main Course, Breads & Rice, Desserts or Drinks?* — each course shows dishes with photos, prices, diet marks and allergens. Built straight from the menu data, so it is instant and uses no AI.
 - **Accounts, required to order:** guests can browse and fill a cart, but checking out asks them to sign in or create an account first (their cart is kept). Email + password, salted scrypt hashes, signed HttpOnly session cookie. Returning customers are greeted by name, see their last order in the ordering room, and the full history under *Account*.
+- **Voice questions:** tap the microphone in the chat box and just say what you'd like — your words appear as you speak and are sent when you finish. Uses the browser's built-in speech recognition (Chrome, Edge, Safari): free, no API key, nothing stored by us. In Chrome the browser sends the audio to Google's speech service to transcribe it; a short notice appears if the microphone is blocked or the browser doesn't support it (Firefox), and typing always works.
 - **Button-driven ordering without the AI:** *Add to cart*, *Checkout* and *Yes, place order* are handled by code (same guarded tools), so they are instant and keep working when every AI model is rate-limited. The AI handles free-form questions.
 
 ## Stack
@@ -41,7 +42,7 @@ Accounts are stored in **Vercel Blob (private)** in production: create a Blob st
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run eval` | Runs all 46 cases for prompt v1 and v2 → console scorecard, `evals/results.json`, `docs/EVAL_REPORT.md` |
 | `npx tsx evals/run.ts --version=v2` | Run one prompt version only (`--version=report` rebuilds the report from stored results) |
-| `npx tsx scripts/check-*.ts` | Offline checks (no API key, no AI calls): menu, tools, guardrails, failover, model views, course picker, accounts, order flow |
+| `npx tsx scripts/check-*.ts` | Offline checks (no API key, no AI calls): menu, tools, guardrails, failover, model views, course picker, accounts, order flow, voice |
 
 ## How it works
 ```
