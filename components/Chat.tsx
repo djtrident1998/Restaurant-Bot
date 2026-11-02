@@ -7,6 +7,7 @@ import Link from "next/link";
 import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_MARKER, addRequestText, removeRequestText } from "@/lib/chatMessages";
 import { interpretCommand } from "@/lib/commands";
 import { AuthPrompt } from "./AuthPrompt";
+import { Credit } from "./Credit";
 import { COURSES, COURSE_ASK_MARKER, courseRequestText } from "@/lib/courseData";
 import { CartPanel, type CartViewData } from "./CartPanel";
 import { DietChip } from "./DietChip";
@@ -229,6 +230,7 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
               <span className="mt-0.5 block text-gold-soft">See all orders →</span>
             </Link>
           )}
+          <Credit className="px-1 pb-1 leading-relaxed" />
         </nav>
         <section className="card flex min-h-0 min-w-0 flex-col p-3 sm:p-4">
           {signedIn &&

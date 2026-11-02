@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+import { CREATOR_NAME, SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 // The picture shown when the link is shared (LinkedIn, WhatsApp, X, Slack…). Generated once at build time.
 export const alt = "Spice Route — the AI waiter you can trust";
@@ -48,12 +48,15 @@ export default function Image() {
           <div style={{ marginTop: 24, fontSize: 32, color: "#f6d9d3" }}>Order North Indian food by chat or voice. No invented dishes. No wrong totals.</div>
         </div>
 
-        <div style={{ display: "flex", gap: 16 }}>
-          {PROOFS.map((p) => (
-            <div key={p} style={{ display: "flex", padding: "12px 22px", borderRadius: 999, background: "rgba(255,255,255,0.14)", fontSize: 26, fontWeight: 600 }}>
-              {p}
-            </div>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          <div style={{ display: "flex", gap: 16 }}>
+            {PROOFS.map((p) => (
+              <div key={p} style={{ display: "flex", padding: "12px 22px", borderRadius: 999, background: "rgba(255,255,255,0.14)", fontSize: 26, fontWeight: 600 }}>
+                {p}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", fontSize: 28, color: "#f6d9d3" }}>Designed & built by {CREATOR_NAME}</div>
         </div>
       </div>
     ),

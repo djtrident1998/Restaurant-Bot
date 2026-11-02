@@ -2,6 +2,7 @@
 
 A restaurant AI assistant for a North Indian kitchen: ask about the menu, filter by diet/price/spice, build a cart, confirm and place an order. Built to show **AI product rigor** — a PRD, enforced guardrails, and a measured eval suite — not just a chatbot.
 
+- **Created by [Dibyajyoti Ray](https://github.com/djtrident1998)** — designed, built and tested as an AI product management project. See the in-app [About page](https://restaurant-bot-three.vercel.app/about).
 - **Live demo:** _(added after deploy)_
 - **Docs:** [PRD](docs/PRD.md) · [Guardrails](docs/GUARDRAILS.md) · [Eval report](docs/EVAL_REPORT.md)
 

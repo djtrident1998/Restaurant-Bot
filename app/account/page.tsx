@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CancelOrder } from "@/components/CancelOrder";
+import { Credit } from "@/components/Credit";
 import { DataControls } from "@/components/DataControls";
 import { ProfileCard } from "@/components/ProfileCard";
 import { FeedbackForm } from "@/components/FeedbackForm";
@@ -113,6 +114,7 @@ export default async function AccountPage() {
           </ul>
         )}
         <DataControls />
+        <Credit className="mt-10 text-center" />
         {store.kind === "memory" &&<p className="mt-6 text-xs text-muted">Demo notice: order history is kept in temporary memory and may be reset when the server restarts.</p>}
       </main>
     </div>

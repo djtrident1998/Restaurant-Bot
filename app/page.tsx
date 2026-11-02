@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Credit } from "@/components/Credit";
 import { LandingHeader } from "@/components/LandingHeader";
 import { COPPER_PHOTO, FEAST_PHOTO, HERO_PHOTO, TANDOOR_PHOTO, photoUrl } from "@/lib/images";
 import { getItem } from "@/lib/menu";
-import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
+import { CREATOR_GITHUB, CREATOR_NAME, SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 
 // Structured data so search engines understand what this is. Only facts that are true: no address, rating or hours are invented.
 const JSON_LD = {
@@ -14,6 +15,7 @@ const JSON_LD = {
   servesCuisine: "North Indian",
   url: siteUrl(),
   acceptsReservations: false,
+  creator: { "@type": "Person", name: CREATOR_NAME, url: CREATOR_GITHUB },
 };
 
 const SIGNATURE =["nv-01", "vm-02", "st-01", "rb-02"].map((id) => getItem(id)!);
@@ -194,10 +196,14 @@ export default function Home() {
             <Link href="/terms" className="py-2 text-gold-soft hover:underline">
               Terms
             </Link>
+            <Link href="/about" className="py-2 text-gold-soft hover:underline">
+              About
+            </Link>
             <Link href="/order" className="py-2 text-gold-soft hover:underline">
               Order
             </Link>
           </nav>
+          <Credit className="text-sm" />
           <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-line">
             <Image unoptimized src={photoUrl(TANDOOR_PHOTO, 200, 120)} alt="" fill className="object-cover" sizes="80px" />
           </div>

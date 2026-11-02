@@ -16,6 +16,9 @@ export async function SiteHeader({ overlay = false }: { overlay?: boolean }) {
           <Link href="/order" className="hidden px-2 text-muted transition hover:text-gold-soft sm:inline">
             Menu &amp; Order
           </Link>
+          <Link href="/about" className="hidden px-2 text-muted transition hover:text-gold-soft sm:inline">
+            About
+          </Link>
           {user ? (
             <>
               <Link href="/account" className="btn-ghost px-3.5 py-2" title="Your account and past orders">

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { HERO_PHOTO, photoUrl } from "@/lib/images";
+import { Credit } from "./Credit";
 import { SiteHeader } from "./SiteHeader";
 
 /** Full-bleed photo backdrop with a centred glass card — used by the sign-in and sign-up pages. */
@@ -21,6 +22,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           {children}
         </div>
       </main>
+      <Credit className="pb-6 text-center" />
     </div>
   );
 }

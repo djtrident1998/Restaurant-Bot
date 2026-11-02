@@ -32,6 +32,7 @@ Also shipped: accounts and order history, group orders with bill splitting, rati
 Honest limits: no real payments (refunds are recorded, not transferred), and my problem statement comes from research, not diner interviews yet. Next step is talking to real diners and restaurant owners.
 
 PRD, guardrails and the eval report are all in the repo: https://github.com/djtrident1998/Restaurant-Bot
+More about the project and me: https://restaurant-bot-three.vercel.app/about
 
 What would you want an AI waiter to never do on its own?
 
