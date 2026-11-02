@@ -3,11 +3,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { get, put } from "@vercel/blob";
 
+export interface OrderFeedback {
+  rating: number; // 1-5 stars
+  comment: string; // optional, <= 500 chars; always rendered as plain text
+  at: number;
+}
+
 export interface OrderRecord {
   id: string;
   total: number;
   placedAt: number;
   lines: { name: string; qty: number; lineTotal: number }[];
+  feedback?: OrderFeedback;
 }
 
 export interface UserRecord {
@@ -27,6 +34,8 @@ export interface UserStore {
   /** false if an account with this email already exists. */
   create(user: UserRecord): Promise<boolean>;
   addOrder(userId: string, order: OrderRecord): Promise<void>;
+  /** Save (or replace) the rating for one of THIS user's orders. false if the user or order doesn't exist. */
+  setFeedback(userId: string, orderId: string, feedback: OrderFeedback): Promise<boolean>;
 }
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -54,6 +63,12 @@ class MemoryStore implements UserStore {
   }
   async addOrder(userId: string, order: OrderRecord) {
     this.users.get(userId)?.orders.push(order);
+  }
+  async setFeedback(userId: string, orderId: string, feedback: OrderFeedback) {
+    const o = this.users.get(userId)?.orders.find((x) => x.id === orderId);
+    if (!o) return false;
+    o.feedback = feedback;
+    return true;
   }
 }
 
@@ -89,6 +104,14 @@ class FileStore implements UserStore {
     const db = this.read();
     db[userId]?.orders.push(order);
     this.write(db);
+  }
+  async setFeedback(userId: string, orderId: string, feedback: OrderFeedback) {
+    const db = this.read();
+    const o = db[userId]?.orders.find((x) => x.id === orderId);
+    if (!o) return false;
+    o.feedback = feedback;
+    this.write(db);
+    return true;
   }
 }
 
@@ -142,6 +165,27 @@ class BlobStore implements UserStore {
         if (attempt === 3) throw e;
       }
     }
+  }
+  async setFeedback(userId: string, orderId: string, feedback: OrderFeedback) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const cur = await this.read(userId);
+      const o = cur?.user.orders.find((x) => x.id === orderId);
+      if (!cur || !o) return false;
+      o.feedback = feedback;
+      try {
+        await put(this.pathFor(userId), JSON.stringify(cur.user), {
+          access: "private",
+          contentType: "application/json",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          ifMatch: cur.etag, // another write in between -> re-read and retry
+        });
+        return true;
+      } catch (e) {
+        if (attempt === 3) throw e;
+      }
+    }
+    return false;
   }
 }
 

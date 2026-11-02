@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
@@ -55,6 +56,18 @@ export default async function AccountPage() {
                 <div className="mt-3 flex justify-between border-t border-line pt-3 font-display text-lg text-gold-soft">
                   <span>Total</span>
                   <span>₹{o.total}</span>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <a href={`/api/invoice/${o.id}`} download className="btn-ghost inline-block px-4 py-1.5 text-sm">
+                    Download invoice (PDF)
+                  </a>
+                </div>
+                <div className="mt-3">
+                  <FeedbackForm
+                    orderId={o.id}
+                    initial={o.feedback ? { rating: o.feedback.rating, comment: o.feedback.comment } : undefined}
+                    title="Rate this order"
+                  />
                 </div>
               </li>
             ))}

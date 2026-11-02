@@ -32,6 +32,9 @@ History: a first version only required a `get_cart` read-back in an earlier turn
 ### Ordering requires an account
 `place_order` is **deny-by-default**: it refuses unless the caller passes `signedIn: true`, which the chat route derives from the verified session cookie — never from anything the browser or the model sends. The same check covers the deterministic buttons, the AI's `place_order` tool and the confirm-button endpoint (`PUT /api/chat` returns 401 to guests). Guests can still browse and fill a cart; the server keeps it, so signing in in the same tab continues where they left off.
 
+### Feedback and invoices
+Both are tied to the signed-in account: the user id comes from the verified session cookie, and the order id must exist on **that** account — someone else's order is a 404 and nothing changes. Ratings are whole numbers 1–5, comments are capped at 500 characters with control characters removed and are only ever rendered as plain text. Feedback is rate-limited per account. Invoice ids are validated (no path tricks), responses are `private, no-store`, and PDF text is sanitised for the standard fonts (unsupported characters become `?`). Invoices never invent tax identifiers and say they are demonstration documents.
+
 ### Accounts
 Passwords are hashed with salted **scrypt** and compared in constant time; sign-in answers "Incorrect email or password" for both unknown email and wrong password (and does the same amount of work), so accounts can't be probed. Sessions are an HMAC-signed token in an `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookie that expires after 7 days. Sign-in and sign-up are rate-limited (8 attempts / 10 minutes per IP+email). Orders are saved to the account only after a turn succeeds, so a model failover/retry can never record an order twice.
 
