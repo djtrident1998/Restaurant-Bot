@@ -1,3 +1,5 @@
+import { SlowLoadNotice } from "@/components/SlowLoadNotice";
+
 // Shown the instant someone taps "Order", while the server prepares the page (a cold start can take a second or two).
 // Without this the screen sits unchanged and the button feels broken.
 export default function Loading() {
@@ -28,7 +30,7 @@ export default function Loading() {
           <div className="mt-6 h-24 rounded-xl bg-line/60" />
         </div>
       </div>
-      <p className="pb-4 text-center text-sm text-muted">Setting your table…</p>
+      <SlowLoadNotice />
     </div>
   );
 }
