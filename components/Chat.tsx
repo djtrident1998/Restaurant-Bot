@@ -5,6 +5,7 @@ import { DefaultChatTransport, getToolName, isToolUIPart } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_MARKER, addRequestText } from "@/lib/chatMessages";
+import { interpretCommand } from "@/lib/commands";
 import { AuthPrompt } from "./AuthPrompt";
 import { COURSES, COURSE_ASK_MARKER, courseRequestText } from "@/lib/courseData";
 import { CartPanel, type CartViewData } from "./CartPanel";
@@ -107,7 +108,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
     onInterim: setInput,
     onFinal: (t) => {
       setInput("");
-      send(t);
+      handleUserText(t);
     },
     onLeftover: setInput, // stopped early: keep what was heard so you can edit or send it
   });
@@ -147,6 +148,20 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
       return;
     }
     sendMessage({ text: CONFIRM_TEXT });
+  };
+
+  // Spoken or typed ordering commands act like the buttons: "place order" starts checkout; after the read-back,
+  // "yes"/"confirm" confirms and "no"/"change" goes back. The server still requires a signed-in session and a
+  // recorded confirmation, and the AI can never confirm.
+  const handleUserText = (text: string) => {
+    const cmd = interpretCommand(text, { awaitingConfirm });
+    if (cmd === "confirm") return void confirmOrder();
+    if (cmd === "change") return send("No, I want to change something");
+    if (cmd === "checkout") {
+      if (!signedIn) setGuestTriedCheckout(true);
+      return send(CHECKOUT_TEXT);
+    }
+    send(text);
   };
 
   return (
@@ -226,6 +241,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               <button type="button" onClick={() => send("No, I want to change something")} className="btn-ghost px-5 py-2 text-sm">
                 Change something
               </button>
+              <span className="self-center text-xs text-muted">Or type or say “yes” to confirm.</span>
             </div>
           )}
 
@@ -248,7 +264,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
             onSubmit={(e) => {
               e.preventDefault();
               if (voice.listening) voice.stop();
-              send(input);
+              handleUserText(input);
               setInput("");
             }}
           >
