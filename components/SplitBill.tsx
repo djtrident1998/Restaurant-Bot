@@ -101,7 +101,7 @@ export function SplitBill({ orderId, lines, total, initial }: { orderId: string;
                   disabled={busy}
                   onClick={() => togglePaid(i, !p.paid)}
                   aria-pressed={p.paid}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${p.paid ? "bg-[var(--veg)] text-white" : "border border-line text-muted hover:border-gold hover:text-ivory"}`}
+                  className={`rounded-full px-3.5 py-2 text-xs font-semibold ${p.paid ? "bg-[var(--veg)] text-white" : "border border-line text-muted hover:border-gold hover:text-ivory"}`}
                 >
                   {p.paid ? "Paid ✓" : "Mark paid"}
                 </button>
@@ -114,7 +114,7 @@ export function SplitBill({ orderId, lines, total, initial }: { orderId: string;
             {copied ? "Copied ✓" : "Copy summary"}
           </button>
           {!anyPaid && (
-            <button type="button" onClick={() => setEditing(true)} className="text-sm text-gold-soft underline-offset-4 hover:underline">
+            <button type="button" onClick={() => setEditing(true)} className="py-2 text-sm font-semibold text-gold-soft underline-offset-4 hover:underline">
               Change split
             </button>
           )}
@@ -174,7 +174,7 @@ export function SplitBill({ orderId, lines, total, initial }: { orderId: string;
         ))}
       </ul>
       {names.length < MAX_PEOPLE && (
-        <button type="button" onClick={() => setNames((n) => [...n, `Guest ${n.length + 1}`])} className="mt-2 text-sm text-gold-soft underline-offset-4 hover:underline">
+        <button type="button" onClick={() => setNames((n) => [...n, `Guest ${n.length + 1}`])} className="mt-1 py-2 text-sm font-semibold text-gold-soft underline-offset-4 hover:underline">
           + Add a person
         </button>
       )}
@@ -195,7 +195,7 @@ export function SplitBill({ orderId, lines, total, initial }: { orderId: string;
                   {names.map((n, pi) => {
                     const on = assign[li]?.includes(pi);
                     return (
-                      <button key={pi} type="button" aria-pressed={on} onClick={() => togglePerson(li, pi)} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${on ? "bg-gold text-white" : "border border-line text-muted"}`}>
+                      <button key={pi} type="button" aria-pressed={on} onClick={() => togglePerson(li, pi)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${on ? "bg-gold text-white" : "border border-line text-muted"}`}>
                         {n.trim() || `Person ${pi + 1}`}
                       </button>
                     );
@@ -238,7 +238,7 @@ export function SplitBill({ orderId, lines, total, initial }: { orderId: string;
             setEditing(false);
             setError("");
           }}
-          className="text-sm text-muted hover:text-ivory"
+          className="px-2 py-2.5 text-sm text-muted hover:text-ivory"
         >
           Cancel
         </button>

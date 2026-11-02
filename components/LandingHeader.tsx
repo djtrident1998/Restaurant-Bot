@@ -36,12 +36,12 @@ export function LandingHeader() {
           </Link>
           {name ? (
             <>
-              <Link href="/account" className="btn-ghost px-3.5 py-1.5" title="Your account and past orders">
+              <Link href="/account" className="btn-ghost px-3.5 py-2" title="Your account and past orders">
                 <span className="hidden sm:inline">Hi, </span>
                 <span className="inline-block max-w-[6.5rem] truncate align-bottom">{name}</span>
               </Link>
               <form action={logout}>
-                <button type="submit" className="px-2 py-1.5 text-muted transition hover:text-gold-soft">
+                <button type="submit" className="px-2 py-2.5 text-muted transition hover:text-gold-soft">
                   Sign out
                 </button>
               </form>

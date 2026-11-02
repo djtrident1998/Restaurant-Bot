@@ -35,7 +35,7 @@ export function StarRating({ value, onChange, readOnly = false, size = "text-3xl
             onFocus={() => setHover(n)}
             onBlur={() => setHover(0)}
             onClick={() => onChange?.(n)}
-            className={`${size} leading-none transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${n <= shown ? "text-amber-400" : "text-neutral-300"}`}
+            className={`${size} px-0.5 py-1.5 leading-none transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${n <= shown ? "text-amber-400" : "text-neutral-300"}`}
           >
             ★
           </button>

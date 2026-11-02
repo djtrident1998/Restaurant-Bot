@@ -171,7 +171,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-3 pb-3 sm:px-5">
+    <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
       <div className="flex items-center justify-between lg:hidden">
         <span className="text-sm font-bold text-ivory">Your table</span>
         <button type="button" onClick={() => setCartOpen((o) => !o)} className="btn-gold px-4 py-2 text-sm">
@@ -197,7 +197,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
                       <span className="text-muted"> · {new Date(lastOrder.placedAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}</span>
                     </p>
                     <p className="text-muted">{lastOrder.items}</p>
-                    <Link href="/account" className="mt-1 inline-block text-gold-soft underline-offset-4 hover:underline">
+                    <Link href="/account" className="mt-1 inline-block py-2 font-semibold text-gold-soft underline-offset-4 hover:underline">
                       See all your orders
                     </Link>
                   </div>
@@ -302,7 +302,21 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
           </form>
         </section>
 
-        <div className={`${cartOpen ? "block" : "hidden"} lg:block`}>
+        {/* Phones: the cart is a bottom sheet over the chat (tap outside or Close to dismiss). Desktop: a side panel. */}
+        <div
+          className={`${cartOpen ? "fixed inset-0 z-40 flex items-end bg-black/45 lg:static lg:z-auto lg:block lg:bg-transparent" : "hidden lg:block"}`}
+          onClick={() => setCartOpen(false)}
+        >
+          <div
+            className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl bg-ink p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl lg:h-full lg:max-h-none lg:overflow-visible lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-2 flex items-center justify-between lg:hidden">
+              <span className="mx-auto ml-0 h-1 w-10 rounded-full bg-line" aria-hidden />
+              <button type="button" onClick={() => setCartOpen(false)} className="rounded-full px-3 py-1 text-sm font-semibold text-gold-soft">
+                Close
+              </button>
+            </div>
           <CartPanel
             cart={cart}
             disabled={busy}
@@ -316,6 +330,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               send(CHECKOUT_TEXT);
             }}
           />
+          </div>
         </div>
       </div>
     </div>

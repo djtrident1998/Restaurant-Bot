@@ -52,7 +52,7 @@ export function MenuCard({ item, onAdd, disabled }: { item: MenuCardItem; onAdd:
             aria-label={`Fewer ${item.name}`}
             disabled={disabled || qty <= 1}
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="h-7 w-7 rounded-lg text-lg font-bold leading-none text-gold-soft hover:bg-gold/10 disabled:text-muted/40"
+            className="h-9 w-9 rounded-lg text-xl font-bold leading-none text-gold-soft hover:bg-gold/10 disabled:text-muted/40"
           >
             −
           </button>
@@ -64,12 +64,12 @@ export function MenuCard({ item, onAdd, disabled }: { item: MenuCardItem; onAdd:
             aria-label={`More ${item.name}`}
             disabled={disabled || qty >= MAX_QTY}
             onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}
-            className="h-7 w-7 rounded-lg text-lg font-bold leading-none text-gold-soft hover:bg-gold/10 disabled:text-muted/40"
+            className="h-9 w-9 rounded-lg text-xl font-bold leading-none text-gold-soft hover:bg-gold/10 disabled:text-muted/40"
           >
             +
           </button>
         </div>
-        <button type="button" disabled={disabled} onClick={() => onAdd(item, qty)} className="btn-gold mt-2 w-[118px] px-2 py-1.5 text-sm uppercase tracking-wide">
+        <button type="button" disabled={disabled} onClick={() => onAdd(item, qty)} className="btn-gold mt-2 min-h-10 w-[118px] px-2 py-2 text-sm uppercase tracking-wide">
           Add{qty > 1 ? ` · ₹${item.price * qty}` : ""}
         </button>
       </div>

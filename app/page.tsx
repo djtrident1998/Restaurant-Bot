@@ -39,7 +39,7 @@ export default function Home() {
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center">
           <p className="fade-up inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white backdrop-blur sm:text-sm">
-            North Indian Fine Dining · AI Waiter
+            North Indian<span className="hidden sm:inline"> Fine Dining</span> · AI Waiter
           </p>
           <h1 className="font-display fade-up mt-6 text-6xl leading-[0.95] tracking-tight text-ivory [animation-delay:120ms] sm:text-8xl">
             Spice <span className="italic text-gold-soft">Route</span>
@@ -81,7 +81,7 @@ export default function Home() {
       <section id="signature" className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-2xl text-ivory sm:text-3xl">Signature dishes</h2>
-          <Link href="/order" className="text-sm font-semibold text-gold-soft underline-offset-4 hover:underline">
+          <Link href="/order" className="py-2 text-sm font-semibold text-gold-soft underline-offset-4 hover:underline">
             See full menu →
           </Link>
         </div>
