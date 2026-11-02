@@ -1,19 +1,40 @@
 @import "tailwindcss";
 
-/* Spice Route — luxury theme: warm black, antique gold, ivory. */
+/*
+  Spice Route — food-app theme: bright, rounded, food-first, with a vivid red/orange brand colour.
+  The token NAMES (gold, ivory, ink…) are historical; "gold" is now the brand red.
+  Sections that sit on a photo (landing hero, sign-in pages) use .theme-dark, which restores the dark palette.
+*/
 :root {
+  --ink: #f5f5f8; /* page background */
+  --panel: #ffffff; /* cards */
+  --panel-2: #f7f7fa;
+  --gold: #e23744; /* brand red (primary) */
+  --gold-soft: #cf2a37; /* brand red for text on light backgrounds */
+  --gold-deep: #b81f2d;
+  --ivory: #1c1c28; /* main text */
+  --muted: #666672;
+  --line: rgba(28, 28, 40, 0.1);
+  --ruby: #b81f2d;
+  --veg: #1a9c4b;
+  --nonveg: #c62828;
+  --accent: #ff7a3d; /* warm orange used in gradients */
+  --shadow: 0 1px 2px rgba(20, 20, 40, 0.05), 0 10px 28px -14px rgba(20, 20, 40, 0.2);
+}
+
+/* Dark, photo-backed sections (hero, auth pages). */
+.theme-dark {
   --ink: #0b0907;
-  --panel: #14110e;
-  --panel-2: #1c1713;
-  --gold: #c9a24d;
-  --gold-soft: #e6c98a;
-  --gold-deep: #9a7a32;
-  --ivory: #f5efe3;
-  --muted: #b3a792;
-  --line: rgba(201, 162, 77, 0.28);
-  --ruby: #8b1e2d;
-  --veg: #5fae6b;
-  --nonveg: #c8514b;
+  --panel: #16120f;
+  --panel-2: #1e1914;
+  --gold: #ff5a4d;
+  --gold-soft: #ff8a7a;
+  --gold-deep: #d9382d;
+  --ivory: #f7f2ea;
+  --muted: #c4b9a6;
+  --line: rgba(255, 255, 255, 0.16);
+  --shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+  color: var(--ivory);
 }
 
 @theme inline {
@@ -33,25 +54,33 @@
 
 html {
   background: var(--ink);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background: radial-gradient(1200px 600px at 80% -10%, rgba(201, 162, 77, 0.08), transparent 60%), var(--ink);
+  background: radial-gradient(900px 420px at 85% -8%, rgba(255, 122, 61, 0.1), transparent 60%), radial-gradient(700px 360px at -5% 0%, rgba(226, 55, 68, 0.07), transparent 60%), var(--ink);
   color: var(--ivory);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
 ::selection {
   background: var(--gold);
-  color: var(--ink);
+  color: #fff;
 }
 
+/* Headings: bold sans in the app (food-app look); the serif is kept for the dark hero sections. */
 .font-display {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.theme-dark .font-display {
   font-family: var(--font-display), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
-/* Thin gold rule with a centre ornament, used between sections. */
+/* Section divider: a soft rule with a small centre mark. */
 .ornament {
   display: flex;
   align-items: center;
@@ -66,59 +95,93 @@ body {
   background: linear-gradient(90deg, transparent, var(--line), transparent);
 }
 
+/* Primary button: vivid red-orange gradient pill. */
 .btn-gold {
-  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 55%, var(--gold-deep));
-  color: #1a1408;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, var(--accent), var(--gold) 55%, var(--gold-deep));
+  color: #fff;
+  font-weight: 650;
+  letter-spacing: 0.01em;
   border-radius: 9999px;
-  transition: filter 0.2s, transform 0.2s;
+  box-shadow: 0 6px 16px -8px rgba(226, 55, 68, 0.7);
+  transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 .btn-gold:hover:not(:disabled) {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
+  box-shadow: 0 10px 22px -10px rgba(226, 55, 68, 0.8);
 }
 .btn-gold:active:not(:disabled) {
   transform: scale(0.97);
 }
 .btn-gold:disabled {
   opacity: 0.45;
+  box-shadow: none;
 }
 
 .btn-ghost {
   border: 1px solid var(--line);
   color: var(--ivory);
+  background: var(--panel);
   border-radius: 9999px;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.theme-dark .btn-ghost {
+  background: transparent;
 }
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(201, 162, 77, 0.1);
+  background: rgba(226, 55, 68, 0.07);
   border-color: var(--gold);
+  color: var(--gold-soft);
 }
 
 .card {
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
 }
 
-/* Custom scrollbars to match the theme */
+/* Scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--gold-deep) transparent;
+  scrollbar-color: rgba(120, 120, 140, 0.4) transparent;
 }
 
-/* Microphone: pulsing gold ring while listening */
+/* Round category tile (Starters, Main Course…) */
+.cat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 78px;
+  transition: transform 0.2s;
+}
+.cat-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.cat-tile .cat-icon {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  width: 64px;
+  border-radius: 9999px;
+  font-size: 30px;
+  background: linear-gradient(145deg, #fff3ef, #ffe3dc);
+  border: 1px solid rgba(226, 55, 68, 0.18);
+  box-shadow: 0 8px 18px -10px rgba(226, 55, 68, 0.55);
+}
+
+/* Microphone: pulsing ring while listening */
 @keyframes mic-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(201, 162, 77, 0.55);
+    box-shadow: 0 0 0 0 rgba(226, 55, 68, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 16px rgba(201, 162, 77, 0);
+    box-shadow: 0 0 0 16px rgba(226, 55, 68, 0);
   }
 }
 .mic-listening {
-  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 55%, var(--gold-deep));
-  color: #1a1408;
+  background: linear-gradient(135deg, var(--accent), var(--gold) 55%, var(--gold-deep));
+  color: #fff;
   border-color: transparent;
   animation: mic-pulse 1.2s ease-out infinite;
 }

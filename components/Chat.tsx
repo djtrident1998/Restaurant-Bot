@@ -22,14 +22,20 @@ function newSessionId() {
   return `s-${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
 }
 
+const COURSE_EMOJI: Record<string, string> = { starters: "🍢", mains: "🍛", "breads-rice": "🫓", desserts: "🍮", drinks: "🥤" };
+
+/** Round category tiles, like a food-delivery app's "What's on your mind?" row. */
 function CoursePicker({ onPick, disabled, title }: { onPick: (text: string) => void; disabled?: boolean; title: string }) {
   return (
     <div>
-      <p className="font-display text-lg text-gold-soft">{title}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <p className="font-display text-lg text-ivory">{title}</p>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-4">
         {COURSES.map((c) => (
-          <button key={c.key} type="button" disabled={disabled} onClick={() => onPick(courseRequestText(c))} className="btn-gold px-5 py-2 text-sm">
-            {c.label}
+          <button key={c.key} type="button" disabled={disabled} onClick={() => onPick(courseRequestText(c))} className="cat-tile disabled:opacity-50">
+            <span className="cat-icon" aria-hidden>
+              {COURSE_EMOJI[c.key] ?? "🍽"}
+            </span>
+            <span className="text-center text-xs font-semibold leading-tight text-ivory">{c.label}</span>
           </button>
         ))}
       </div>
@@ -167,9 +173,9 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-3 pb-3 sm:px-5">
       <div className="flex items-center justify-between lg:hidden">
-        <span className="text-xs uppercase tracking-[0.25em] text-gold">Your table</span>
-        <button type="button" onClick={() => setCartOpen((o) => !o)} className="btn-ghost px-4 py-1.5 text-sm">
-          Order · ₹{cart.total}
+        <span className="text-sm font-bold text-ivory">Your table</span>
+        <button type="button" onClick={() => setCartOpen((o) => !o)} className="btn-gold px-4 py-2 text-sm">
+          🛒 {cart.itemCount} {cart.itemCount === 1 ? "item" : "items"} · ₹{cart.total}
         </button>
       </div>
 
@@ -177,15 +183,15 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
         <section className="card flex min-h-0 min-w-0 flex-col p-3 sm:p-4">
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {messages.length === 0 && (
-              <div className="fade-up rounded-2xl border border-line bg-gradient-to-b from-[#1f1810] to-panel p-5 sm:p-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-gold">{userName ? `Welcome back, ${userName}` : "Welcome"}</p>
-                <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">Your table is ready</h2>
+              <div className="fade-up rounded-2xl border border-gold/15 bg-gradient-to-br from-[#fff1ee] via-[#fff7f2] to-panel p-5 sm:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-soft">{userName ? `Welcome back, ${userName}` : "Welcome"}</p>
+                <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">Hungry? Your waiter is ready</h2>
                 <p className="mt-2 max-w-xl text-sm text-muted">
                   I&apos;m your waiter for the evening. Tell me what you&apos;re in the mood for, or let me guide you through the menu.
                 </p>
                 {signedIn && lastOrder && (
-                  <div className="mt-4 rounded-xl border border-line bg-black/30 p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.25em] text-gold">Your last order</p>
+                  <div className="mt-4 rounded-xl border border-line bg-panel p-3 text-sm">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-soft">Your last order</p>
                     <p className="mt-1 text-ivory">
                       <span className="font-mono">{lastOrder.id}</span> · ₹{lastOrder.total}
                       <span className="text-muted"> · {new Date(lastOrder.placedAt).toLocaleDateString("en-IN", { dateStyle: "medium" })}</span>
@@ -215,9 +221,9 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               </div>
             )}
             <div className="mt-3">
-              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem) => send(addRequestText(it.name))} />
+              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} />
             </div>
-            {error && <p className="mt-3 text-sm text-red-300">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
+            {error && <p className="mt-3 text-sm text-red-600">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
             <div ref={bottomRef} />
           </div>
 
@@ -253,7 +259,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
           </div>
 
           {(voice.listening || voice.error) && (
-            <p role="status" className={`mt-2 flex items-center gap-2 text-sm ${voice.error ? "text-red-300" : "text-gold-soft"}`}>
+            <p role="status" className={`mt-2 flex items-center gap-2 text-sm ${voice.error ? "text-red-600" : "text-gold-soft"}`}>
               {voice.listening && !voice.error && <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-gold" aria-hidden />}
               {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
             </p>
@@ -273,7 +279,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               onChange={(e) => setInput(e.target.value)}
               placeholder={voice.listening ? "Listening…" : "Ask about a dish, or tell me what you fancy…"}
               maxLength={400}
-              className="min-w-0 flex-1 rounded-full border border-line bg-ink px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold"
+              className="min-w-0 flex-1 rounded-full border border-line bg-panel2 px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold focus:bg-panel"
             />
             <button
               type="button"

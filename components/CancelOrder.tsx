@@ -45,7 +45,7 @@ export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false 
 
   if (refund) {
     return (
-      <div role="status" className="rounded-xl border border-gold/50 bg-black/30 p-4" data-testid="cancel-done">
+      <div role="status" className="rounded-xl border border-gold/30 bg-[#fff1ee] p-4" data-testid="cancel-done">
         <p className="font-display text-gold-soft">Order {orderId} cancelled</p>
         <p className="mt-1 text-sm text-ivory/90">
           A full refund of <strong>₹{refund.amount}</strong> has been recorded (ref <span className="font-mono">{refund.ref}</span>).
@@ -56,7 +56,7 @@ export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false 
   }
 
   return (
-    <div className="rounded-xl border border-line bg-black/30 p-4">
+    <div className="rounded-xl border border-line bg-panel2 p-4">
       {!asking ? (
         <button type="button" onClick={() => setAsking(true)} className="btn-ghost px-4 py-1.5 text-sm">
           Cancel order &amp; refund{minutesLeft ? ` (${minutesLeft} min left)` : ""}
@@ -77,7 +77,7 @@ export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false 
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-300">
+        <p role="alert" className="mt-2 text-sm text-red-600">
           {error}
         </p>
       )}

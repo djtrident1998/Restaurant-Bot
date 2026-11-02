@@ -1,14 +1,17 @@
 import type { CartViewData } from "./CartPanel";
 import { CancelOrder } from "./CancelOrder";
 import { FeedbackForm } from "./FeedbackForm";
+import { SplitBill } from "./SplitBill";
 
 export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartViewData }) {
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-gold/60 bg-gradient-to-b from-[#241c10] to-panel p-5 shadow-[0_0_40px_-12px_rgba(201,162,77,0.5)]">
+      <div className="rounded-2xl border border-[var(--veg)]/30 bg-gradient-to-b from-[#effaf2] to-panel p-5 shadow-[0_12px_30px_-18px_rgba(26,156,75,0.5)]">
         <div className="text-center">
-          <div className="text-2xl text-gold">✦</div>
-          <h3 className="font-display text-xl text-gold-soft">Order placed</h3>
+          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-[var(--veg)] text-xl text-white" aria-hidden>
+            ✓
+          </div>
+          <h3 className="font-display mt-2 text-xl text-ivory">Order placed</h3>
           <p className="mt-1 text-sm text-muted">
             Order ID <span className="font-mono font-semibold text-ivory">{orderId}</span>
           </p>
@@ -24,7 +27,7 @@ export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartVie
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex justify-between border-t border-line pt-3 font-display text-lg text-gold-soft">
+        <div className="mt-3 flex justify-between border-t border-line pt-3 font-display text-lg text-ivory">
           <span>Total</span>
           <span>₹{cart.total}</span>
         </div>
@@ -34,6 +37,7 @@ export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartVie
           </a>
         </div>
       </div>
+      <SplitBill orderId={orderId} total={cart.total} lines={cart.lines.map((l) => ({ name: l.name, qty: l.qty, lineTotal: l.lineTotal }))} />
       <CancelOrder orderId={orderId} total={cart.total} />
       <FeedbackForm orderId={orderId} />
     </div>

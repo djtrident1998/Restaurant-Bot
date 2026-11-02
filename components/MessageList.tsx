@@ -50,7 +50,7 @@ const MAX_CARDS = 8;
 interface Props {
   messages: UIMessage[];
   busy: boolean;
-  onAdd: (item: MenuCardItem) => void;
+  onAdd: (item: MenuCardItem, qty: number) => void;
 }
 
 export function MessageList({ messages, busy, onAdd }: Props) {
@@ -63,11 +63,11 @@ export function MessageList({ messages, busy, onAdd }: Props) {
               if (p.type === "text") {
                 if (!p.text.trim()) return null;
                 return m.role === "user" ? (
-                  <div key={i} className="btn-gold !rounded-2xl !rounded-br-md px-4 py-2 text-[15px] font-medium tracking-normal">
+                  <div key={i} className="btn-gold !rounded-2xl !rounded-br-md px-4 py-2 text-[15px] font-medium tracking-normal shadow-none">
                     {p.text}
                   </div>
                 ) : (
-                  <div key={i} className="card !rounded-bl-md px-4 py-3 text-[15px] leading-relaxed text-ivory">
+                  <div key={i} className="rounded-2xl rounded-bl-md border border-line bg-panel2 px-4 py-3 text-[15px] leading-relaxed text-ivory">
                     <RichText text={p.text} />
                   </div>
                 );
@@ -80,11 +80,9 @@ export function MessageList({ messages, busy, onAdd }: Props) {
                   return (
                     <div key={i}>
                       {heading && (
-                        <div className="ornament mb-3 mt-1">
-                          <h3 className="font-display text-lg tracking-wide text-gold-soft">{heading}</h3>
-                        </div>
+                        <h3 className="font-display mb-3 mt-1 text-xl text-ivory">{heading}</h3>
                       )}
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 md:grid-cols-2">
                         {out.items.slice(0, MAX_CARDS).map((it) => (
                           <MenuCard key={it.id} item={it} onAdd={onAdd} disabled={busy} />
                         ))}

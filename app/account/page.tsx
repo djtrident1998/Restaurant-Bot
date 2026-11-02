@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CancelOrder } from "@/components/CancelOrder";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { SplitBill } from "@/components/SplitBill";
 import { cancelEligibility } from "@/lib/cancel";
 import type { OrderRecord } from "@/lib/auth/store";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -28,12 +29,17 @@ export default async function AccountPage() {
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:px-8">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Your account</p>
-        <h1 className="font-display mt-2 text-4xl text-ivory">{current.name}</h1>
-        <p className="mt-1 text-sm text-muted">{current.email}</p>
-        <div className="ornament my-8 text-xs">◆</div>
+        <div className="card flex items-center gap-4 p-5">
+          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--gold-deep)] text-2xl font-bold text-white" aria-hidden>
+            {current.name.trim().charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h1 className="font-display truncate text-2xl text-ivory">{current.name}</h1>
+            <p className="truncate text-sm text-muted">{current.email}</p>
+          </div>
+        </div>
 
-        <h2 className="font-display text-2xl text-gold-soft">Past orders</h2>
+        <h2 className="font-display mt-8 text-2xl text-ivory">Past orders</h2>
         {orders.length === 0 ? (
           <div className="card mt-4 p-6 text-muted">
             You haven&apos;t placed an order yet.{" "}
@@ -62,7 +68,7 @@ export default async function AccountPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3 flex justify-between border-t border-line pt-3 font-display text-lg text-gold-soft">
+                <div className="mt-3 flex justify-between border-t border-line pt-3 font-display text-lg text-ivory">
                   <span>Total</span>
                   <span>₹{o.total}</span>
                 </div>
@@ -72,7 +78,7 @@ export default async function AccountPage() {
                   </a>
                 </div>
                 {o.cancelledAt ? (
-                  <div className="mt-3 rounded-xl border border-gold/40 bg-black/30 p-4 text-sm" data-testid="order-cancelled">
+                  <div className="mt-3 rounded-xl border border-gold/30 bg-[#fff1ee] p-4 text-sm" data-testid="order-cancelled">
                     <p className="font-display text-gold-soft">Cancelled</p>
                     <p className="mt-1 text-ivory/90">
                       Refund of ₹{o.refund?.amount ?? o.total} recorded{o.refund ? ` (ref ${o.refund.ref})` : ""} on{" "}
@@ -81,6 +87,9 @@ export default async function AccountPage() {
                   </div>
                 ) : (
                   <>
+                    <div className="mt-3">
+                      <SplitBill orderId={o.id} total={o.total} lines={o.lines} initial={o.split} />
+                    </div>
                     {cancelMinutesLeft(o) > 0 && (
                       <div className="mt-3">
                         <CancelOrder orderId={o.id} total={o.total} minutesLeft={cancelMinutesLeft(o)} refreshAfter />

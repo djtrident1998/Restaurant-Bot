@@ -52,6 +52,7 @@ export async function cancelOrder(store: UserStore, userId: string, rawOrderId: 
     refused = null;
     o.cancelledAt = now;
     o.refund = { amount: o.total, ref: refundRefFor(o.id), at: now };
+    delete o.split; // a cancelled order has nothing left to divide
     return true;
   });
   if (!order) return { ok: false, status: 404, error: "We couldn't find that order on your account." };

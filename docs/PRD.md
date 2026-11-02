@@ -46,7 +46,9 @@ The guarantees that matter are enforced in code, not by the score (section 5).
 - Voice input (microphone) and spoken/typed commands such as "place order"
 - Feedback and 1–5 star ratings after an order
 - PDF invoices
+- **Group orders:** quantity stepper for bulk quantities (up to 20 per dish) and a bill split between 2–12 people, equally or dish by dish, with a "paid" tracker (no real payment)
 - **Cancel and refund** within a 10-minute window (full refund recorded)
+- Food-delivery-style UI: category tiles, dish rows with photos, live cart
 - Luxury landing page and responsive UI
 - Cost and traffic protection for a public launch (section 6)
 

@@ -13,7 +13,7 @@ export function StarRating({ value, onChange, readOnly = false, size = "text-3xl
     return (
       <span className={`inline-flex gap-0.5 ${size === "text-3xl" ? "text-lg" : size}`} role="img" aria-label={`${value} out of 5 stars`}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <span key={n} className={n <= value ? "text-gold" : "text-line"} aria-hidden>
+          <span key={n} className={n <= value ? "text-amber-400" : "text-neutral-300"} aria-hidden>
             ★
           </span>
         ))}
@@ -35,7 +35,7 @@ export function StarRating({ value, onChange, readOnly = false, size = "text-3xl
             onFocus={() => setHover(n)}
             onBlur={() => setHover(0)}
             onClick={() => onChange?.(n)}
-            className={`${size} leading-none transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${n <= shown ? "text-gold" : "text-line"}`}
+            className={`${size} leading-none transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold ${n <= shown ? "text-amber-400" : "text-neutral-300"}`}
           >
             ★
           </button>

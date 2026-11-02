@@ -9,7 +9,7 @@ export { Brand };
 export async function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   const user = await getCurrentUser();
   return (
-    <header className={`${overlay ? "absolute inset-x-0 top-0 z-20" : "relative z-20 border-b border-line bg-ink/80 backdrop-blur"}`}>
+    <header className={`${overlay ? "absolute inset-x-0 top-0 z-20" : "sticky top-0 z-20 border-b border-line bg-panel/90 shadow-sm backdrop-blur"}`}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <Brand />
         <nav className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs min-[420px]:gap-2 min-[420px]:text-sm sm:gap-3">

@@ -19,6 +19,8 @@ export interface OrderRecord {
   cancelledAt?: number;
   /** Refund recorded for a cancelled order (always the full order total; see lib/cancel.ts). */
   refund?: { amount: number; ref: string; at: number };
+  /** Group order: how the bill is divided between people (see lib/split.ts). Amounts always add up to `total`. */
+  split?: { mode: "equal" | "items"; people: { name: string; amount: number; paid: boolean }[]; assign?: number[][]; at: number };
 }
 
 export interface UserRecord {

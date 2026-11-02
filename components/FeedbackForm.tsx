@@ -48,7 +48,7 @@ export function FeedbackForm({ orderId, initial, title = "How was your meal?" }:
 
   if (saved && !editing) {
     return (
-      <div className="rounded-xl border border-line bg-black/30 p-4" data-testid="feedback-saved">
+      <div className="rounded-xl border border-line bg-panel2 p-4" data-testid="feedback-saved">
         <p className="font-display text-gold-soft">Thank you for your feedback</p>
         <div className="mt-1">
           <StarRating value={saved.rating} readOnly />
@@ -62,7 +62,7 @@ export function FeedbackForm({ orderId, initial, title = "How was your meal?" }:
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-line bg-black/30 p-4">
+    <form onSubmit={submit} className="rounded-xl border border-line bg-panel2 p-4">
       <p className="font-display text-lg text-gold-soft">{title}</p>
       <div className="mt-2">
         <StarRating value={rating} onChange={setRating} />
@@ -77,13 +77,13 @@ export function FeedbackForm({ orderId, initial, title = "How was your meal?" }:
         maxLength={MAX_COMMENT}
         rows={3}
         placeholder="Tell us more (optional)"
-        className="mt-3 w-full resize-none rounded-xl border border-line bg-ink px-3 py-2 text-sm text-ivory outline-none placeholder:text-muted/60 focus:border-gold"
+        className="mt-3 w-full resize-none rounded-xl border border-line bg-panel px-3 py-2 text-sm text-ivory outline-none placeholder:text-muted/60 focus:border-gold"
       />
       <div className="mt-1 text-right text-xs text-muted">
         {comment.length}/{MAX_COMMENT}
       </div>
       {error && (
-        <p role="alert" className="mt-1 text-sm text-red-300">
+        <p role="alert" className="mt-1 text-sm text-red-600">
           {error}
         </p>
       )}

@@ -20,7 +20,7 @@ export function DietChip({ label, onClick, disabled }: { label: string; onClick:
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="btn-ghost shrink-0 px-3.5 py-1.5 text-sm text-gold-soft disabled:opacity-40"
+      className="btn-ghost shrink-0 px-3.5 py-1.5 text-sm font-medium disabled:opacity-40"
     >
       {label}
     </button>

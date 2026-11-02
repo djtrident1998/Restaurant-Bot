@@ -23,6 +23,22 @@ export function checkAuthLimit(key: string, now = Date.now()): boolean {
   return true;
 }
 
+// A general "N actions per window per key" limiter for signed-in actions that are cheap but shouldn't be hammered
+// (bill splitting, marking shares paid). Per server instance, like the others.
+const winGlobal = globalThis as unknown as { __spiceWin?: Map<string, number[]> };
+const winHits = (winGlobal.__spiceWin ??= new Map<string, number[]>());
+
+export function checkWindow(key: string, max: number, windowMs: number, now = Date.now()): boolean {
+  const recent = (winHits.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (recent.length >= max) {
+    winHits.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  winHits.set(key, recent);
+  return true;
+}
+
 export function checkRateLimit(key: string, now = Date.now(), limits = getLimits()): { ok: true } | { ok: false; reason: string } {
   const day = new Date(now).toISOString().slice(0, 10);
   const total = (g.__spiceDay = g.__spiceDay?.day === day ? g.__spiceDay : { day, n: 0 });
