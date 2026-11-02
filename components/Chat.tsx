@@ -171,7 +171,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
+    <div className="mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col gap-3 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 lg:pt-4">
       <div className="flex items-center justify-between lg:hidden">
         <span className="text-sm font-bold text-ivory">Your table</span>
         <button type="button" onClick={() => setCartOpen((o) => !o)} className="btn-gold px-4 py-2 text-sm">
@@ -179,7 +179,56 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_310px]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[224px_minmax(0,1fr)_330px]">
+        {/* Laptop only: a browse rail (categories + quick questions). Phones use the category tiles and chips in the chat. */}
+        <nav aria-label="Browse the menu" className="hidden min-h-0 flex-col gap-4 overflow-y-auto lg:flex">
+          <div className="card p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Menu</p>
+            <ul className="mt-2 space-y-1">
+              {COURSES.map((c) => (
+                <li key={c.key}>
+                  <button
+                    type="button"
+                    disabled={!sessionId || busy}
+                    onClick={() => send(courseRequestText(c))}
+                    className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm font-semibold text-ivory transition hover:bg-gold/10 hover:text-gold-soft disabled:opacity-50"
+                  >
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#fff3ef] to-[#ffe3dc] text-lg" aria-hidden>
+                      {COURSE_EMOJI[c.key] ?? "🍽"}
+                    </span>
+                    {c.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Ask the waiter</p>
+            <ul className="mt-2 space-y-1.5">
+              {QUICK.map((q) => (
+                <li key={q}>
+                  <button
+                    type="button"
+                    disabled={!sessionId || busy}
+                    onClick={() => send(q)}
+                    className="w-full rounded-xl border border-line px-3 py-2 text-left text-sm text-ivory transition hover:border-gold hover:text-gold-soft disabled:opacity-50"
+                  >
+                    {q}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {signedIn && lastOrder && (
+            <Link href="/account" className="card block p-4 text-sm transition hover:border-gold/50">
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Your last order</span>
+              <span className="mt-1 block font-semibold text-ivory">
+                {lastOrder.id} · ₹{lastOrder.total}
+              </span>
+              <span className="mt-0.5 block text-gold-soft">See all orders →</span>
+            </Link>
+          )}
+        </nav>
         <section className="card flex min-h-0 min-w-0 flex-col p-3 sm:p-4">
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {messages.length === 0 && (
@@ -251,7 +300,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
             </div>
           )}
 
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
             <DietChip label="Browse the menu" onClick={() => send("Show me the menu")} disabled={busy || !sessionId} />
             {QUICK.map((c) => (
               <DietChip key={c} label={c} onClick={() => send(c)} disabled={busy || !sessionId} />

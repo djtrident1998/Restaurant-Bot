@@ -82,7 +82,7 @@ export function MessageList({ messages, busy, onAdd }: Props) {
                       {heading && (
                         <h3 className="font-display mb-3 mt-1 text-xl text-ivory">{heading}</h3>
                       )}
-                      <div className="grid gap-3 md:grid-cols-2">
+                      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                         {out.items.slice(0, MAX_CARDS).map((it) => (
                           <MenuCard key={it.id} item={it} onAdd={onAdd} disabled={busy} />
                         ))}
