@@ -38,6 +38,9 @@ Free models go first, paid Haiku last. If a model fails before answering (rate l
 ## Accounts and storage
 Accounts are stored in **Vercel Blob (private)** in production: create a Blob store in the Vercel dashboard (Storage tab) and connect it to the project — that adds `BLOB_READ_WRITE_TOKEN` automatically. Without it, accounts fall back to server memory (a notice is shown on the sign-up page) and are lost on restart. Locally they go to `.data/users.json` (git-ignored). Optionally set `SESSION_SECRET`; otherwise it is derived from the Blob token.
 
+## Cost & traffic safety
+Built to survive a viral post: static landing page, no-AI ordering paths, free-first model chain, a shared daily budget on the paid model, per-visitor/global limits, input/history caps and `[usage]` logging. Details, tunable `LIMIT_*` variables and a runbook: [docs/COST_FRAMEWORK.md](docs/COST_FRAMEWORK.md).
+
 ## Scripts
 | Command | What it does |
 |---|---|

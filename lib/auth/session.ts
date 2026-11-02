@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createToken, getSessionSecret, SESSION_DAYS, verifyToken } from "./token";
 import { getStore } from "./store";
+import { NAME_COOKIE } from "./nameCookie";
 
 export const SESSION_COOKIE = "sr_session";
 
@@ -10,19 +11,19 @@ export interface CurrentUser {
   email: string;
 }
 
-export async function startSession(userId: string): Promise<void> {
+export async function startSession(userId: string, name = ""): Promise<void> {
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, createToken(userId, getSessionSecret()), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DAYS * 86_400,
-  });
+  const opts = { secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: SESSION_DAYS * 86_400 };
+  jar.set(SESSION_COOKIE, createToken(userId, getSessionSecret()), { ...opts, httpOnly: true });
+  // Display-only first name for the static landing page (readable by script on purpose; never trusted for access).
+  const first = name.trim().split(/\s+/)[0]?.slice(0, 30);
+  if (first) jar.set(NAME_COOKIE, encodeURIComponent(first), { ...opts, httpOnly: false });
 }
 
 export async function endSession(): Promise<void> {
-  (await cookies()).delete(SESSION_COOKIE);
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
+  jar.delete(NAME_COOKIE);
 }
 
 /** The signed-in user, or null. Verifies the cookie signature and expiry, then loads the account. */

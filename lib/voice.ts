@@ -31,7 +31,7 @@ export function getRecognitionCtor(w: unknown = typeof window === "undefined" ? 
   return g?.SpeechRecognition ?? g?.webkitSpeechRecognition ?? null;
 }
 
-export const MAX_VOICE_CHARS = 1000;
+export const MAX_VOICE_CHARS = 400; // same as the server's default message limit (LIMIT_INPUT_CHARS)
 
 /** Tidy a transcript: collapse whitespace, trim, cap at the same length the text box allows. */
 export function cleanTranscript(s: string): string {

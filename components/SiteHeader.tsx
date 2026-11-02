@@ -1,15 +1,9 @@
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { getCurrentUser } from "@/lib/auth/session";
+import { Brand } from "./Brand";
 
-export function Brand({ className = "" }: { className?: string }) {
-  return (
-    <Link href="/" className={`group inline-flex items-center gap-2.5 ${className}`}>
-      <span className="text-gold transition group-hover:rotate-45">✦</span>
-      <span className="font-display whitespace-nowrap text-base tracking-[0.14em] text-ivory min-[420px]:text-xl sm:text-2xl sm:tracking-[0.18em]">SPICE ROUTE</span>
-    </Link>
-  );
-}
+export { Brand };
 
 /** Top bar. Reads the signed-in user from the session cookie on the server. `overlay` floats it over the hero photo. */
 export async function SiteHeader({ overlay = false }: { overlay?: boolean }) {

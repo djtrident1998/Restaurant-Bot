@@ -41,6 +41,9 @@ export function getChain(env: NodeJS.ProcessEnv = process.env): Candidate[] {
   return [{ provider: p, id }];
 }
 
+/** Only Anthropic (Claude) costs money here; Groq and Gemini are used on their free tiers. */
+export const isPaid = (c: Candidate) => c.provider === "anthropic";
+
 export function buildModel(c: Candidate) {
   switch (c.provider) {
     case "anthropic":

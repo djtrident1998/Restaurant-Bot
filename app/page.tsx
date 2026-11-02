@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SiteHeader } from "@/components/SiteHeader";
+import { LandingHeader } from "@/components/LandingHeader";
 import { COPPER_PHOTO, FEAST_PHOTO, HERO_PHOTO, TANDOOR_PHOTO, photoUrl } from "@/lib/images";
 import { getItem } from "@/lib/menu";
 
@@ -20,7 +20,7 @@ export default function Home() {
         <Image unoptimized priority fill src={photoUrl(HERO_PHOTO, 2200)} alt="The Spice Route dining room, warmly lit" className="-z-10 object-cover" sizes="100vw" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/80 via-black/55 to-ink" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.45)_0%,transparent_55%,rgba(0,0,0,0.6)_100%)]" />
-        <SiteHeader overlay />
+        <LandingHeader />
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center">
           <p className="fade-up text-xs uppercase tracking-[0.45em] text-gold sm:text-sm">North Indian Fine Dining</p>

@@ -1,4 +1,5 @@
 import { MENU } from "./menu";
+import { getLimits } from "./config";
 
 // ---- 1. Scope: deterministic pre-filter for obvious prompt-injection / jailbreak attempts ----
 
@@ -14,10 +15,8 @@ const INJECTION_PATTERNS: RegExp[] = [
 export const SCOPE_DECLINE =
   "I can only help with the Spice Route menu, your cart and your order. Want me to suggest something tasty?";
 
-export const MAX_INPUT_CHARS = 1000;
-
-export function checkUserInput(text: string): { ok: true } | { ok: false; reason: string; reply: string } {
-  if (text.length > MAX_INPUT_CHARS)
+export function checkUserInput(text: string, maxChars = getLimits().maxInputChars): { ok: true } | { ok: false; reason: string; reply: string } {
+  if (text.length > maxChars)
     return { ok: false, reason: "too_long", reply: "That message is a bit long for me — could you shorten it?" };
   if (INJECTION_PATTERNS.some((p) => p.test(text)))
     return { ok: false, reason: "injection", reply: SCOPE_DECLINE };

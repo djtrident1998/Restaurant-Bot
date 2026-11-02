@@ -272,7 +272,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={voice.listening ? "Listening…" : "Ask about a dish, or tell me what you fancy…"}
-              maxLength={1000}
+              maxLength={400}
               className="min-w-0 flex-1 rounded-full border border-line bg-ink px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold"
             />
             <button

@@ -1,6 +1,8 @@
 import type { Candidate } from "./models";
 
 export const ALL_FAILED_MESSAGE = "The AI service is busy right now. Please try again in a minute.";
+export const CAPACITY_MESSAGE =
+  "The AI chat has reached its free capacity for now. The menu, cart and ordering buttons still work — and the chat will be back soon.";
 
 interface Chunk {
   type: string;
@@ -11,6 +13,11 @@ export interface FailoverHooks {
   /** Called before EVERY attempt (including the first) — use it to roll back side effects of a failed attempt. */
   beforeAttempt?: (c: Candidate) => void;
   onFail?: (c: Candidate, error: unknown) => void;
+  /**
+   * Asked right before an attempt; return false to skip that candidate (e.g. the paid model's daily budget is used up).
+   * A skipped candidate is not a failure and is not marked unhealthy.
+   */
+  shouldAttempt?: (c: Candidate) => boolean | Promise<boolean>;
 }
 
 /**
@@ -27,8 +34,13 @@ export async function streamWithFailover<C extends Chunk>(
   write: (chunk: C | { type: "error"; errorText: string }) => void,
   hooks: FailoverHooks = {},
 ): Promise<Candidate | null> {
+  let skipped = false;
   for (let i = 0; i < candidates.length; i++) {
     const c = candidates[i];
+    if (hooks.shouldAttempt && !(await hooks.shouldAttempt(c))) {
+      skipped = true;
+      continue;
+    }
     hooks.beforeAttempt?.(c);
     const buffer: C[] = [];
     let failure: unknown = null;
@@ -51,6 +63,6 @@ export async function streamWithFailover<C extends Chunk>(
     hooks.onFail?.(c, failure);
   }
   hooks.beforeAttempt?.(candidates[candidates.length - 1]); // leave state as it was before the turn
-  write({ type: "error", errorText: ALL_FAILED_MESSAGE });
+  write({ type: "error", errorText: skipped ? CAPACITY_MESSAGE : ALL_FAILED_MESSAGE });
   return null;
 }

@@ -2,7 +2,10 @@ import { convertToModelMessages, createUIMessageStream, createUIMessageStreamRes
 import { agentConfig } from "@/lib/agent";
 import { buildTools } from "@/lib/tools";
 import { streamWithFailover } from "@/lib/failover";
-import { availableCandidates, buildModel, cooldownFor, getChain, markFailed } from "@/lib/models";
+import { availableCandidates, buildModel, cooldownFor, getChain, isPaid, markFailed } from "@/lib/models";
+import { getLimits } from "@/lib/config";
+import { sanitizeHistory } from "@/lib/sanitize";
+import { takeDaily } from "@/lib/budget";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
 import { beginTurn, getOrders, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -59,9 +62,15 @@ async function saveOrdersToAccount(sessionId: string, before: number, userId: st
 }
 
 export async function POST(req: Request) {
+  const limits = getLimits();
+  // Cap the request size BEFORE parsing: the body is untrusted and every byte of history is potential token cost.
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > limits.maxBodyBytes) return Response.json({ error: "Request too large." }, { status: 413 });
   let body: { messages?: UIMessage[]; sessionId?: string };
   try {
-    body = await req.json();
+    const raw = await req.text();
+    if (raw.length > limits.maxBodyBytes) return Response.json({ error: "Request too large." }, { status: 413 });
+    body = JSON.parse(raw);
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -98,16 +107,17 @@ export async function POST(req: Request) {
     return staticReply(result.text, result.outputs);
   }
 
-  const limit = checkRateLimit(ip);
-  if (!limit.ok) return Response.json({ error: limit.reason }, { status: 429 });
+  const limit = checkRateLimit(ip, Date.now(), limits);
+  if (!limit.ok) return staticReply(limit.reason); // shown in the chat like a normal reply; buttons keep working
 
   const candidates = availableCandidates(getChain());
   if (candidates.length === 0) return Response.json({ error: "No AI provider is configured." }, { status: 503 });
 
   beginTurn(sessionId);
   const snapshot = snapshotSession(sessionId);
-  // Passing the tools lets older tool results in the history use their compact model-facing view (toModelOutput).
-  const modelMessages = await convertToModelMessages(messages, { tools: buildTools(sessionId, signedIn) });
+  // The history comes from the browser, so it is sanitised first: text only, each message truncated, a total
+  // character budget, no forged system/tool content (see lib/sanitize.ts).
+  const modelMessages = await convertToModelMessages(sanitizeHistory(messages, MAX_MESSAGES, limits), { tools: buildTools(sessionId, signedIn) });
 
   // Primary model first; if it fails before answering (rate limit, no credits, outage) the next
   // configured backup is tried invisibly, and the failed one is skipped for a couple of minutes.
@@ -132,7 +142,11 @@ export async function POST(req: Request) {
               onError: ({ error }) => {
                 realErrors.set(keyOf(c), error);
               },
-              onFinish: ({ text, steps }) => {
+              onFinish: (event) => {
+                const { text, steps } = event;
+                // Usage log: which model answered and how many tokens it used (visible in Vercel runtime logs).
+                const u = ((event as { totalUsage?: unknown }).totalUsage ?? (event as { usage?: unknown }).usage ?? {}) as { inputTokens?: number; outputTokens?: number };
+                console.log("[usage]", JSON.stringify({ model: keyOf(c), paid: isPaid(c), in: u.inputTokens, out: u.outputTokens, steps: steps.length }));
                 const results = steps.flatMap((s) => s.toolResults.map((r) => (r as { output?: unknown }).output));
                 const g = checkGrounding(text, collectToolAmounts([...results, viewCart(sessionId)]));
                 if (!g.ok) console.warn("[grounding] flagged reply", JSON.stringify(g));
@@ -142,6 +156,8 @@ export async function POST(req: Request) {
           {
             // A failed attempt may already have added to the cart etc.; roll back so the next model starts clean.
             beforeAttempt: () => restoreSession(sessionId, snapshot),
+            // The paid model is only reached when the free ones failed, and only while today's SHARED budget lasts.
+            shouldAttempt: async (c) => !isPaid(c) || (await takeDaily("paid", limits.paidPerDay)),
             onFail: (c, e) => {
               const real = realErrors.get(keyOf(c)) ?? e;
               markFailed(c, Date.now(), cooldownFor(String(real)));

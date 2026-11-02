@@ -40,7 +40,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   });
   if (!created) return { fieldErrors: { email: "An account with this email already exists. Try signing in." } };
 
-  await startSession(userIdFor(email));
+  await startSession(userIdFor(email), name);
   redirect("/order");
 }
 
@@ -56,7 +56,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   const ok = await verifyPassword(password, user?.passwordHash ?? (await dummyHash()));
   if (!user || !ok) return { error: "Incorrect email or password." };
 
-  await startSession(user.id);
+  await startSession(user.id, user.name);
   redirect("/order");
 }
 
