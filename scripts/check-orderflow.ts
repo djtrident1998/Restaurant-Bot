@@ -1,6 +1,6 @@
 // Offline: the whole button-driven order journey, exercised through the same functions the API route calls. No AI.
 import { detectOrderIntent, handleOrderIntent } from "../lib/orderFlow";
-import { addRequestText, CHECKOUT_TEXT, CONFIRM_TEXT } from "../lib/chatMessages";
+import { addRequestText, removeRequestText, CHECKOUT_TEXT, CONFIRM_TEXT } from "../lib/chatMessages";
 import { userConfirm, viewCart, getOrders } from "../lib/cart";
 
 let fails = 0;
@@ -17,6 +17,8 @@ const S = "flow-test-session";
 
 // --- detection ---
 check("add button text is recognised", detectOrderIntent(addRequestText("Chana Masala", 2))?.type === "add");
+check("remove text is recognised", detectOrderIntent(removeRequestText("Chana Masala", 1))?.type === "remove");
+check("remove of an unknown dish is not an intent", detectOrderIntent("Remove 1 Moon Pie from my cart") === null);
 check("add is case-insensitive on the dish name", detectOrderIntent("add 1 paneer tikka to my cart")?.type === "add");
 check("unknown dish falls through to the AI", detectOrderIntent("Add 1 Sushi Roll to my cart") === null);
 check("free text is not intercepted", detectOrderIntent("Add some naan please") === null && detectOrderIntent("place my order") === null);
@@ -71,6 +73,26 @@ check("guest 'Yes, place the order' is refused even with consent recorded", /sig
 check("guest cart is kept (they can sign in and come back to it)", viewCart(G).total === 280);
 check("the same cart can be ordered once signed in", /SR-\d{4}/.test(run(G, CONFIRM_TEXT, true)!.text) && getOrders(G).length === 1);
 check("guest with an empty cart is told it's empty, not asked to sign in", /empty/i.test(run("flow-test-guest-empty", CHECKOUT_TEXT, false)!.text));
+
+// --- removing / changing quantity from the cart ---
+const R = "flow-test-remove";
+run(R, addRequestText("Paneer Tikka", 3), false);
+run(R, addRequestText("Butter Naan", 2), false);
+const total0 = viewCart(R).total;
+const r1 = run(R, removeRequestText("Paneer Tikka", 1), false)!;
+check("remove one: quantity and total drop (code math)", viewCart(R).lines.find((l) => l.name === "Paneer Tikka")?.qty === 2 && viewCart(R).total === total0 - 280 && new RegExp(`₹${total0 - 280}`).test(r1.text), r1.text);
+const r2 = run(R, removeRequestText("Paneer Tikka", 5), false)!;
+check("removing more than you have just clears that dish", !viewCart(R).lines.some((l) => l.name === "Paneer Tikka") && viewCart(R).lines.length === 1, r2.text);
+const r3 = run(R, removeRequestText("Paneer Tikka", 1), false)!;
+check("removing a dish that isn't in the cart says so and changes nothing", /isn't in your order/.test(r3.text) && viewCart(R).lines.length === 1);
+const r4 = run(R, removeRequestText("Butter Naan", 2), false)!;
+check("removing the last dish empties the cart", viewCart(R).lines.length === 0 && viewCart(R).total === 0 && /empty/i.test(r4.text));
+const RC = "flow-test-remove-consent";
+run(RC, addRequestText("Paneer Tikka", 1));
+run(RC, addRequestText("Mango Lassi", 1));
+userConfirm(RC);
+run(RC, removeRequestText("Mango Lassi", 1)); // cart changed AFTER consent
+check("removing a dish voids an earlier confirm-button press", /tap the/i.test(run(RC, CONFIRM_TEXT)!.text) && getOrders(RC).length === 0);
 
 // --- sessions are isolated ---
 check("another session's cart is untouched", viewCart("flow-test-other").total === 0);

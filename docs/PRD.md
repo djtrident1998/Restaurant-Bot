@@ -46,6 +46,10 @@ The guarantees that matter are enforced in code, not by the score (section 5).
 - Voice input (microphone) and spoken/typed commands such as "place order"
 - Feedback and 1–5 star ratings after an order
 - PDF invoices
+- **Allergen Shield:** a saved food profile (vegetarian only; avoid nuts, dairy, gluten, fish, egg) flags every dish, warns when a conflicting dish is added, and instructs the AI — enforced in code
+- **Your data, your control:** privacy policy, terms, consent at sign-up, data export and password-confirmed account deletion
+- **Cart editing:** +/− and remove on every line; instant add feedback
+- **Quality baseline:** WCAG-checked contrast, keyboard focus, security headers + CSP, share preview, sitemap/robots, health check, friendly error pages ([GLOBAL_STANDARD.md](GLOBAL_STANDARD.md))
 - **Group orders:** quantity stepper for bulk quantities (up to 20 per dish) and a bill split between 2–12 people, equally or dish by dish, with a "paid" tracker (no real payment)
 - **Cancel and refund** within a 10-minute window (full refund recorded)
 - Food-delivery-style UI: category tiles, dish rows with photos, live cart

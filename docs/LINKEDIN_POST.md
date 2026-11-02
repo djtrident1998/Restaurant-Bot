@@ -25,7 +25,9 @@ Two lessons that surprised me:
 1. "Yes" typed in chat isn't consent. Cheaper models treated even their own summary as a go-ahead. I moved consent to a real button press, enforced on the server.
 2. Free models can't carry a public launch. So I added a failover chain (free models first, paid last), a hard daily cap on the paid one, and made routine steps — menu, cart, checkout, cancel — run with zero AI calls.
 
-Also shipped: accounts and order history, ratings, PDF invoices, and cancel-with-refund.
+The feature I'm proudest of: Allergen Shield. Tell it once that you avoid nuts or eat vegetarian, and every dish is flagged, adding a conflicting dish gets a warning from code, and the AI is told what to avoid. Safety shouldn't depend on the model remembering.
+
+Also shipped: accounts and order history, group orders with bill splitting, ratings, PDF invoices, cancel-with-refund, and one-click download or deletion of your data.
 
 Honest limits: no real payments (refunds are recorded, not transferred), and my problem statement comes from research, not diner interviews yet. Next step is talking to real diners and restaurant owners.
 

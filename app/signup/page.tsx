@@ -5,7 +5,7 @@ import { AuthShell } from "@/components/AuthShell";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
 
-export const metadata: Metadata = { title: "Create account — Spice Route" };
+export const metadata: Metadata = { title: "Create account", description: "Create a free Spice Route account to order food, see your order history and split bills with friends." };
 
 export default async function SignupPage() {
   if (await getCurrentUser()) redirect("/order");

@@ -3,8 +3,20 @@ import Link from "next/link";
 import { LandingHeader } from "@/components/LandingHeader";
 import { COPPER_PHOTO, FEAST_PHOTO, HERO_PHOTO, TANDOOR_PHOTO, photoUrl } from "@/lib/images";
 import { getItem } from "@/lib/menu";
+import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
 
-const SIGNATURE = ["nv-01", "vm-02", "st-01", "rb-02"].map((id) => getItem(id)!);
+// Structured data so search engines understand what this is. Only facts that are true: no address, rating or hours are invented.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  name: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  servesCuisine: "North Indian",
+  url: siteUrl(),
+  acceptsReservations: false,
+};
+
+const SIGNATURE =["nv-01", "vm-02", "st-01", "rb-02"].map((id) => getItem(id)!);
 
 const CATEGORIES = [
   { emoji: "🍢", label: "Starters" },
@@ -30,6 +42,7 @@ const PERKS = [
 export default function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD).replace(/</g, "\\u003c") }} />
       {/* ───────── Hero (dark, on a photo) ───────── */}
       <section className="theme-dark relative isolate flex min-h-[100svh] flex-col">
         <Image unoptimized priority fill src={photoUrl(HERO_PHOTO, 2200)} alt="The Spice Route dining room, warmly lit" className="-z-10 object-cover" sizes="100vw" />
@@ -37,7 +50,7 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.4)_0%,transparent_55%,rgba(0,0,0,0.55)_100%)]" />
         <LandingHeader />
 
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center">
+        <div id="main" tabIndex={-1} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center outline-none">
           <p className="fade-up inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white backdrop-blur sm:text-sm">
             North Indian Fine Dining
           </p>
@@ -174,6 +187,17 @@ export default function Home() {
               Spice <span className="text-gold-soft">Route</span>
             </span>
           </div>
+          <nav aria-label="Footer" className="flex gap-5 text-sm font-semibold">
+            <Link href="/privacy" className="py-2 text-gold-soft hover:underline">
+              Privacy
+            </Link>
+            <Link href="/terms" className="py-2 text-gold-soft hover:underline">
+              Terms
+            </Link>
+            <Link href="/order" className="py-2 text-gold-soft hover:underline">
+              Order
+            </Link>
+          </nav>
           <div className="relative h-12 w-20 overflow-hidden rounded-lg border border-line">
             <Image unoptimized src={photoUrl(TANDOOR_PHOTO, 200, 120)} alt="" fill className="object-cover" sizes="80px" />
           </div>

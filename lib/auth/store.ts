@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { get, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 
 export interface OrderFeedback {
   rating: number; // 1-5 stars
@@ -30,6 +30,8 @@ export interface UserRecord {
   passwordHash: string;
   createdAt: number;
   orders: OrderRecord[];
+  /** Allergen Shield: dietary needs applied across the app (see lib/profile.ts). */
+  profile?: { vegOnly: boolean; avoid: string[] };
 }
 
 export interface UserStore {
@@ -48,6 +50,10 @@ export interface UserStore {
    * a decision like "cancel only if not already cancelled" can't be raced. Returns the order, or null if not found.
    */
   updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean): Promise<OrderRecord | null>;
+  /** Atomically change the account record itself (same rules as updateOrder). Returns the record, or null if not found. */
+  updateUser(userId: string, change: (user: UserRecord) => boolean): Promise<UserRecord | null>;
+  /** Permanently remove the account and everything stored with it. Returns false if there was no such account. */
+  deleteUser(userId: string): Promise<boolean>;
 }
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -87,6 +93,15 @@ class MemoryStore implements UserStore {
     if (!o) return null;
     change(o);
     return o;
+  }
+  async updateUser(userId: string, change: (user: UserRecord) => boolean) {
+    const u = this.users.get(userId);
+    if (!u) return null;
+    change(u);
+    return u;
+  }
+  async deleteUser(userId: string) {
+    return this.users.delete(userId);
   }
 }
 
@@ -137,6 +152,20 @@ class FileStore implements UserStore {
     if (!o) return null;
     if (change(o)) this.write(db);
     return o;
+  }
+  async updateUser(userId: string, change: (user: UserRecord) => boolean) {
+    const db = this.read();
+    const u = db[userId];
+    if (!u) return null;
+    if (change(u)) this.write(db);
+    return u;
+  }
+  async deleteUser(userId: string) {
+    const db = this.read();
+    if (!db[userId]) return false;
+    delete db[userId];
+    this.write(db);
+    return true;
   }
 }
 
@@ -232,6 +261,31 @@ class BlobStore implements UserStore {
       }
     }
     return null;
+  }
+  async updateUser(userId: string, change: (user: UserRecord) => boolean) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const cur = await this.read(userId);
+      if (!cur) return null;
+      if (!change(cur.user)) return cur.user;
+      try {
+        await put(this.pathFor(userId), JSON.stringify(cur.user), {
+          access: "private",
+          contentType: "application/json",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          ifMatch: cur.etag,
+        });
+        return cur.user;
+      } catch (e) {
+        if (attempt === 3) throw e;
+      }
+    }
+    return null;
+  }
+  async deleteUser(userId: string) {
+    if (!(await this.read(userId))) return false;
+    await del(this.pathFor(userId));
+    return true;
   }
 }
 

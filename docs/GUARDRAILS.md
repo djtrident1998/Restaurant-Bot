@@ -41,6 +41,12 @@ The AI has **no** cancel or refund tool. A cancel request in chat ("cancel my or
 ### Group orders and split bill
 Money maths is code, and the browser is never trusted for amounts. `POST /api/orders/split` takes only **who** shares **what** (names, and which people share each dish); every rupee is recomputed from the order stored on the signed-in customer's account (`lib/split.ts`). Rules: 2–12 distinct names (control characters stripped, 30 characters max), valid person indices, shares always add up to the order total exactly (the odd rupee is handed out in rotation), and a safety check refuses any result that doesn't. Own orders only (someone else's id is a 404), rate-limited, and the split is locked once anyone is marked paid so recorded payments can't be reshuffled. Cancelling an order clears its split. The AI has no tool for any of this.
 
+### Allergen Shield
+A signed-in customer can save a food profile (vegetarian only; avoid nuts, dairy, gluten, fish, egg). It is validated strictly (`parseProfile`: exact shape, known allergens only) and applied by **code** in three places: dish cards (`dishFit` flags every dish against the menu's own allergen data — tested for all 42 dishes × 5 allergens), the deterministic add-to-cart reply (a warning is appended and the customer decides), and the AI's instructions (a short note added only when a profile exists, so evals and guests are unaffected). *Limitation:* the AI's free-text answer is guided, not guaranteed, so the dish cards and add-to-cart warning are the enforced layer; menu allergen data is indicative and every screen says to confirm allergies with the restaurant.
+
+### Your data
+`GET /api/account/export` returns everything stored about the signed-in customer (never the password hash). Account deletion needs the current password (so a stolen session can't wipe an account), is rate-limited, and permanently removes the record from the store.
+
 ### Accounts
 Passwords are hashed with salted **scrypt** and compared in constant time; sign-in answers "Incorrect email or password" for both unknown email and wrong password (and does the same amount of work), so accounts can't be probed. Sessions are an HMAC-signed token in an `HttpOnly`, `SameSite=Lax` (and `Secure` in production) cookie that expires after 7 days. Sign-in and sign-up are rate-limited (8 attempts / 10 minutes per IP+email). Orders are saved to the account only after a turn succeeds, so a model failover/retry can never record an order twice.
 

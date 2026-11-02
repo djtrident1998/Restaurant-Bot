@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CancelOrder } from "@/components/CancelOrder";
+import { DataControls } from "@/components/DataControls";
+import { ProfileCard } from "@/components/ProfileCard";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { SplitBill } from "@/components/SplitBill";
 import { cancelEligibility } from "@/lib/cancel";
@@ -10,7 +12,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
 
-export const metadata: Metadata = { title: "Your account — Spice Route" };
+export const metadata: Metadata = { title: "Your account", robots: { index: false, follow: false } };
 
 /** Whole minutes left in the cancellation window (0 if over or already cancelled). */
 function cancelMinutesLeft(o: OrderRecord): number {
@@ -28,7 +30,7 @@ export default async function AccountPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:px-8">
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 outline-none sm:px-8">
         <div className="card flex items-center gap-4 p-5">
           <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--gold-deep)] text-2xl font-bold text-white" aria-hidden>
             {current.name.trim().charAt(0).toUpperCase()}
@@ -39,7 +41,9 @@ export default async function AccountPage() {
           </div>
         </div>
 
-        <h2 className="font-display mt-8 text-2xl text-ivory">Past orders</h2>
+        <ProfileCard initial={current.profile} />
+
+        <h2 className="font-display mt-10 text-2xl text-ivory">Past orders</h2>
         {orders.length === 0 ? (
           <div className="card mt-4 p-6 text-muted">
             You haven&apos;t placed an order yet.{" "}
@@ -108,7 +112,8 @@ export default async function AccountPage() {
             ))}
           </ul>
         )}
-        {store.kind === "memory" && <p className="mt-6 text-xs text-muted">Demo notice: order history is kept in temporary memory and may be reset when the server restarts.</p>}
+        <DataControls />
+        {store.kind === "memory" &&<p className="mt-6 text-xs text-muted">Demo notice: order history is kept in temporary memory and may be reset when the server restarts.</p>}
       </main>
     </div>
   );

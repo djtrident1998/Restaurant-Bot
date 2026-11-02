@@ -4,6 +4,7 @@ import { buildTools } from "./tools";
 import { getSystemPrompt, type PromptVersion } from "./prompt";
 import { checkGrounding, checkUserInput, collectToolAmounts, SCOPE_DECLINE, type GroundingResult } from "./guardrails";
 import { beginTurn, viewCart, type CartView } from "./cart";
+import { promptNote, type Profile } from "./profile";
 
 export const MAX_STEPS = 8;
 export const MAX_OUTPUT_TOKENS = 1200; // generous for a short reply plus a reasoning model's thinking
@@ -28,10 +29,12 @@ export function agentConfig(
   promptVersion: PromptVersion = getPromptVersion(),
   model: LanguageModel = getModel(),
   signedIn = false,
+  profile?: Profile,
 ) {
   return {
     model,
-    system: getSystemPrompt(promptVersion),
+    // A signed-in customer's Allergen Shield profile is added to the instructions (nothing is added without one).
+    system: getSystemPrompt(promptVersion) + promptNote(profile),
     tools: buildTools(sessionId, signedIn),
     stopWhen: isStepCount(MAX_STEPS),
     // Replies are short. Capping output also shrinks what Groq reserves against its tokens-per-minute limit

@@ -14,11 +14,14 @@ export interface CartViewData {
 export function CartPanel({
   cart,
   onCheckout,
+  onAdjust,
   disabled,
   signedIn = false,
 }: {
   cart: CartViewData;
   onCheckout: () => void;
+  /** Change a dish's quantity by one (+1 / -1). Removing the last one takes the dish out of the cart. */
+  onAdjust?: (line: CartLineView, delta: 1 | -1) => void;
   disabled?: boolean;
   signedIn?: boolean;
 }) {
@@ -42,14 +45,29 @@ export function CartPanel({
       ) : (
         <ul className="mt-3 flex-1 divide-y divide-line overflow-y-auto">
           {cart.lines.map((l) => (
-            <li key={l.itemId} className="flex items-start justify-between gap-2 py-2.5 text-sm">
+            <li key={l.itemId} className="flex items-center justify-between gap-2 py-2.5 text-sm">
               <div className="min-w-0">
                 <div className="font-semibold text-ivory">{l.name}</div>
-                <div className="text-muted">
-                  {l.qty} × ₹{l.unitPrice}
-                </div>
+                <div className="text-muted">₹{l.unitPrice} each</div>
               </div>
-              <div className="font-semibold text-ivory">₹{l.lineTotal}</div>
+              <div className="flex shrink-0 items-center gap-2">
+                {onAdjust ? (
+                  <div className="flex items-center rounded-lg border border-line" role="group" aria-label={`Quantity of ${l.name}`}>
+                    <button type="button" disabled={disabled} onClick={() => onAdjust(l, -1)} aria-label={l.qty === 1 ? `Remove ${l.name}` : `One fewer ${l.name}`} className="h-9 w-9 text-lg font-bold text-gold-soft hover:bg-gold/10 disabled:opacity-40">
+                      {l.qty === 1 ? "🗑" : "−"}
+                    </button>
+                    <span className="min-w-6 text-center font-bold text-ivory" aria-live="polite">
+                      {l.qty}
+                    </span>
+                    <button type="button" disabled={disabled || l.qty >= 20} onClick={() => onAdjust(l, 1)} aria-label={`One more ${l.name}`} className="h-9 w-9 text-lg font-bold text-gold-soft hover:bg-gold/10 disabled:opacity-40">
+                      +
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-muted">× {l.qty}</span>
+                )}
+                <span className="w-14 text-right font-semibold text-ivory">₹{l.lineTotal}</span>
+              </div>
             </li>
           ))}
         </ul>

@@ -103,7 +103,7 @@ export async function POST(req: Request) {
   const orderIntent = detectOrderIntent(userText);
   if (orderIntent) {
     const ordersBefore = getOrders(sessionId).length;
-    const result = handleOrderIntent(sessionId, orderIntent, signedIn);
+    const result = handleOrderIntent(sessionId, orderIntent, signedIn, user?.profile);
     await saveOrdersToAccount(sessionId, ordersBefore, user?.id);
     return staticReply(result.text, result.outputs);
   }
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
           candidates,
           (c, isLast) =>
             streamText({
-              ...agentConfig(sessionId, undefined, buildModel(c), signedIn),
+              ...agentConfig(sessionId, undefined, buildModel(c), signedIn, user?.profile),
               messages: modelMessages,
               maxRetries: isLast ? 1 : 0, // fail fast on all but the last so a backup is tried quickly
               // Time budget (function limit is 60s): a stuck model must not freeze the reply.

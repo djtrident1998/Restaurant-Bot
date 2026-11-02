@@ -4,6 +4,7 @@ import { MenuCard, type MenuCardItem } from "./MenuCard";
 import { CancelOrder } from "./CancelOrder";
 import { OrderConfirm } from "./OrderConfirm";
 import type { CartViewData } from "./CartPanel";
+import type { Profile } from "@/lib/profile";
 
 function inline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((s, i) =>
@@ -51,9 +52,10 @@ interface Props {
   messages: UIMessage[];
   busy: boolean;
   onAdd: (item: MenuCardItem, qty: number) => void;
+  profile?: Profile;
 }
 
-export function MessageList({ messages, busy, onAdd }: Props) {
+export function MessageList({ messages, busy, onAdd, profile }: Props) {
   return (
     <div className="space-y-5" aria-live="polite">
       {messages.map((m) => (
@@ -84,7 +86,7 @@ export function MessageList({ messages, busy, onAdd }: Props) {
                       )}
                       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                         {out.items.slice(0, MAX_CARDS).map((it) => (
-                          <MenuCard key={it.id} item={it} onAdd={onAdd} disabled={busy} />
+                          <MenuCard key={it.id} item={it} onAdd={onAdd} disabled={busy} profile={profile} />
                         ))}
                       </div>
                     </div>
@@ -103,7 +105,16 @@ export function MessageList({ messages, busy, onAdd }: Props) {
           </div>
         </div>
       ))}
-      {busy && <div className="text-sm italic text-muted">Your waiter is preparing a reply…</div>}
+      {busy && (
+        <div role="status" className="flex items-center gap-2 text-sm text-muted">
+          <span className="flex gap-1" aria-hidden>
+            <span className="h-2 w-2 animate-bounce rounded-full bg-gold [animation-delay:-0.3s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-gold [animation-delay:-0.15s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-gold" />
+          </span>
+          <span>Your waiter is preparing a reply…</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { dummyHash, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { loginSchema, signupSchema, type AuthFormState } from "@/lib/auth/schemas";
-import { endSession, startSession } from "@/lib/auth/session";
+import { deleteAccount } from "@/lib/account";
+import { endSession, getCurrentUser, startSession } from "@/lib/auth/session";
 import { getStore, userIdFor } from "@/lib/auth/store";
 import { checkAuthLimit } from "@/lib/ratelimit";
 
@@ -58,6 +59,17 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
 
   await startSession(user.id, user.name);
   redirect("/order");
+}
+
+/** Permanently delete the signed-in customer's account (needs their password), then sign them out. */
+export async function deleteMyAccount(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  const current = await getCurrentUser();
+  if (!current) return { error: "Please sign in again first." };
+  if (!checkAuthLimit(`delete:${current.id}:${await clientIp()}`)) return { error: TOO_MANY };
+  const r = await deleteAccount(getStore(), current.id, formData.get("password"));
+  if (!r.ok) return { error: r.error };
+  await endSession();
+  redirect("/login?deleted=1"); // the sign-in page confirms the deletion
 }
 
 export async function logout(): Promise<void> {

@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, getToolName, isToolUIPart } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_MARKER, addRequestText } from "@/lib/chatMessages";
+import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_MARKER, addRequestText, removeRequestText } from "@/lib/chatMessages";
 import { interpretCommand } from "@/lib/commands";
 import { AuthPrompt } from "./AuthPrompt";
 import { COURSES, COURSE_ASK_MARKER, courseRequestText } from "@/lib/courseData";
@@ -13,6 +13,7 @@ import { DietChip } from "./DietChip";
 import { MessageList } from "./MessageList";
 import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
+import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 
 const EMPTY_CART: CartViewData = { lines: [], itemCount: 0, total: 0 };
 
@@ -50,7 +51,7 @@ export interface LastOrder {
   items: string; // e.g. "2 × Chana Masala, 3 × Tandoori Roti"
 }
 
-export function Chat({ userName, signedIn = false, lastOrder }: { userName?: string; signedIn?: boolean; lastOrder?: LastOrder }) {
+export function Chat({ userName, signedIn = false, lastOrder, profile }: { userName?: string; signedIn?: boolean; lastOrder?: LastOrder; profile?: Profile }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
   const [input, setInput] = useState("");
@@ -230,6 +231,24 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
           )}
         </nav>
         <section className="card flex min-h-0 min-w-0 flex-col p-3 sm:p-4">
+          {signedIn &&
+            (hasProfile(profile) ? (
+              <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-900" role="note">
+                <span>
+                  🛡 <strong>Allergen Shield on</strong> — {profileSummary(profile)}
+                </span>
+                <Link href="/account#profile" className="shrink-0 py-1 font-semibold underline-offset-4 hover:underline">
+                  Edit
+                </Link>
+              </div>
+            ) : (
+              <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-panel2 px-3 py-2 text-sm text-muted" role="note">
+                <span>🛡 Tell us your allergies once and every dish gets flagged for you.</span>
+                <Link href="/account#profile" className="shrink-0 py-1 font-semibold text-gold-soft underline-offset-4 hover:underline">
+                  Set up
+                </Link>
+              </div>
+            ))}
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {messages.length === 0 && (
               <div className="fade-up rounded-2xl border border-gold/15 bg-gradient-to-br from-[#fff1ee] via-[#fff7f2] to-panel p-5 sm:p-6">
@@ -270,7 +289,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               </div>
             )}
             <div className="mt-3">
-              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} />
+              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} profile={profile} />
             </div>
             {error && <p className="mt-3 text-sm text-red-600">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
             <div ref={bottomRef} />
@@ -349,6 +368,7 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
               Send
             </button>
           </form>
+          <p className="mt-2 text-center text-xs text-muted">AI waiter — answers can be wrong. Please confirm allergies with the restaurant.</p>
         </section>
 
         {/* Phones: the cart is a bottom sheet over the chat (tap outside or Close to dismiss). Desktop: a side panel. */}
@@ -368,8 +388,9 @@ export function Chat({ userName, signedIn = false, lastOrder }: { userName?: str
             </div>
           <CartPanel
             cart={cart}
-            disabled={busy}
+            disabled={busy || !sessionId}
             signedIn={signedIn}
+            onAdjust={(line, delta) => send(delta > 0 ? addRequestText(line.name, 1) : removeRequestText(line.name, 1))}
             onCheckout={() => {
               setCartOpen(false);
               if (!signedIn) {

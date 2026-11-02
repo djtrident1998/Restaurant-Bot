@@ -65,6 +65,17 @@ export function addLine(sessionId: string, itemId: string, qty: number): void {
   s.version++;
 }
 
+/** Take `qty` of a dish out of the cart (the line disappears at zero). Returns false if it wasn't in the cart. */
+export function removeLine(sessionId: string, itemId: string, qty: number): boolean {
+  const s = session(sessionId);
+  const cur = s.qty.get(itemId) ?? 0;
+  if (cur <= 0 || qty <= 0) return false;
+  if (cur - qty <= 0) s.qty.delete(itemId);
+  else s.qty.set(itemId, cur - qty);
+  s.version++; // any cart change invalidates an earlier read-back / button confirmation
+  return true;
+}
+
 export function lineQty(sessionId: string, itemId: string): number {
   return session(sessionId).qty.get(itemId) ?? 0;
 }

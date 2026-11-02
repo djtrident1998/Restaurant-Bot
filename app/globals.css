@@ -9,7 +9,7 @@
   --ink: #f5f5f8; /* page background */
   --panel: #ffffff; /* cards */
   --panel-2: #f7f7fa;
-  --gold: #e23744; /* brand red (primary) */
+  --gold: #d42a38; /* brand red (primary); white text on it is 5.0:1 */
   --gold-soft: #cf2a37; /* brand red for text on light backgrounds */
   --gold-deep: #b81f2d;
   --ivory: #1c1c28; /* main text */
@@ -18,7 +18,11 @@
   --ruby: #b81f2d;
   --veg: #1a9c4b;
   --nonveg: #c62828;
-  --accent: #ff7a3d; /* warm orange used in gradients */
+  --accent: #ff7a3d; /* warm orange for decorative gradients (never behind small text) */
+  /* Button gradient: every stop keeps white text at 4.5:1 or better (WCAG AA). Same in light and dark sections. */
+  --btn-start: #d6401c;
+  --btn-mid: #d42a38;
+  --btn-end: #b81f2d;
   --shadow: 0 1px 2px rgba(20, 20, 40, 0.05), 0 10px 28px -14px rgba(20, 20, 40, 0.2);
 }
 
@@ -97,7 +101,7 @@ body {
 
 /* Primary button: vivid red-orange gradient pill. */
 .btn-gold {
-  background: linear-gradient(135deg, var(--accent), var(--gold) 55%, var(--gold-deep));
+  background: linear-gradient(135deg, var(--btn-start), var(--btn-mid) 55%, var(--btn-end));
   color: #fff;
   font-weight: 650;
   letter-spacing: 0.01em;
@@ -146,6 +150,37 @@ body {
   scrollbar-color: rgba(120, 120, 140, 0.4) transparent;
 }
 
+/* Keyboard users always see where they are (WCAG 2.4.7 / 2.4.11). Mouse clicks don't show it. */
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.theme-dark :focus-visible {
+  outline-color: #fff;
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* Skip link: first thing a keyboard or screen-reader user reaches. */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #1c1c28;
+  color: #fff;
+  font-weight: 600;
+  transition: top 0.15s;
+}
+.skip-link:focus {
+  top: 12px;
+}
+
 /* Round category tile (Starters, Main Course…) */
 .cat-tile {
   display: flex;
@@ -180,7 +215,7 @@ body {
   }
 }
 .mic-listening {
-  background: linear-gradient(135deg, var(--accent), var(--gold) 55%, var(--gold-deep));
+  background: linear-gradient(135deg, var(--btn-start), var(--btn-mid) 55%, var(--btn-end));
   color: #fff;
   border-color: transparent;
   animation: mic-pulse 1.2s ease-out infinite;

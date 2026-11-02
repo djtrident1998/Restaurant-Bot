@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createToken, getSessionSecret, SESSION_DAYS, verifyToken } from "./token";
 import { getStore } from "./store";
 import { NAME_COOKIE } from "./nameCookie";
+import { normalizeProfile, type Profile } from "../profile";
 
 export const SESSION_COOKIE = "sr_session";
 
@@ -9,6 +10,7 @@ export interface CurrentUser {
   id: string;
   name: string;
   email: string;
+  profile: Profile;
 }
 
 export async function startSession(userId: string, name = ""): Promise<void> {
@@ -32,5 +34,5 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const payload = verifyToken(token, getSessionSecret());
   if (!payload) return null;
   const user = await getStore().findById(payload.uid);
-  return user ? { id: user.id, name: user.name, email: user.email } : null;
+  return user ? { id: user.id, name: user.name, email: user.email, profile: normalizeProfile(user.profile) } : null;
 }

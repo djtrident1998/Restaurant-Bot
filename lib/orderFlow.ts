@@ -2,11 +2,17 @@
 // Same guarded tool functions as the model uses, so totals and the confirm-button rule are unchanged — but these
 // steps are instant, cost no AI quota and keep working when every AI provider is rate-limited.
 import { MENU } from "./menu";
-import { viewCart } from "./cart";
+import { lineQty, removeLine, viewCart } from "./cart";
 import { addToCartTool, getCartTool, placeOrderTool } from "./tools";
 import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_TEXT } from "./chatMessages";
+import { addWarning, dishFit, type Profile } from "./profile";
 
-export type OrderIntent = { type: "add"; itemId: string; name: string; qty: number } | { type: "checkout" } | { type: "confirm" } | null;
+export type OrderIntent =
+  | { type: "add"; itemId: string; name: string; qty: number }
+  | { type: "remove"; itemId: string; name: string; qty: number }
+  | { type: "checkout" }
+  | { type: "confirm" }
+  | null;
 
 export interface StaticOutput {
   toolName: string;
@@ -25,6 +31,11 @@ export function detectOrderIntent(text: string): OrderIntent {
     const item = BY_NAME.get(m[2].trim().toLowerCase());
     if (item) return { type: "add", itemId: item.id, name: item.name, qty: Number(m[1]) };
   }
+  const rm = t.match(/^remove (\d{1,2}) (.+) from my cart$/i);
+  if (rm) {
+    const item = BY_NAME.get(rm[2].trim().toLowerCase());
+    if (item) return { type: "remove", itemId: item.id, name: item.name, qty: Number(rm[1]) };
+  }
   return null;
 }
 
@@ -35,6 +46,7 @@ export function handleOrderIntent(
   sessionId: string,
   intent: NonNullable<OrderIntent>,
   signedIn = false,
+  profile?: Profile,
 ): { text: string; outputs: StaticOutput[] } {
   // Browsing and filling a cart is open to everyone; checking out requires an account.
   if (!signedIn && (intent.type === "checkout" || intent.type === "confirm")) {
@@ -45,7 +57,23 @@ export function handleOrderIntent(
   if (intent.type === "add") {
     const r = addToCartTool(sessionId, { itemId: intent.itemId, qty: intent.qty });
     if (!r.ok) return { text: `Sorry — ${r.error}`, outputs: [] };
-    return { text: `Added ${intent.qty} × **${intent.name}** to your order (₹${r.line.lineTotal}). Your total is now **₹${r.cart.total}**.\n\nWould you like anything else, or shall we check out?`, outputs: [] };
+    // Allergen Shield: if the dish conflicts with the customer's saved profile, say so — decided by code, not the AI.
+    const dish = MENU.find((i) => i.id === intent.itemId);
+    const warning = dish ? addWarning(intent.name, dishFit(dish, profile)) : "";
+    return { text: `Added ${intent.qty} × **${intent.name}** to your order (₹${r.line.lineTotal}). Your total is now **₹${r.cart.total}**.${warning}\n\nWould you like anything else, or shall we check out?`, outputs: [] };
+  }
+
+  if (intent.type === "remove") {
+    const had = lineQty(sessionId, intent.itemId);
+    if (!had) return { text: `**${intent.name}** isn't in your order.`, outputs: [] };
+    removeLine(sessionId, intent.itemId, Math.min(intent.qty, had));
+    const cart = viewCart(sessionId);
+    return {
+      text: cart.lines.length
+        ? `Removed ${Math.min(intent.qty, had)} × **${intent.name}**. Your total is now **₹${cart.total}**.`
+        : `Removed **${intent.name}**. Your order is empty now — pick a category to add something.`,
+      outputs: [],
+    };
   }
 
   if (intent.type === "checkout") {

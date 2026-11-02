@@ -10,7 +10,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       <Image unoptimized priority fill src={photoUrl(HERO_PHOTO, 1800)} alt="" className="-z-10 object-cover" sizes="100vw" />
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/80 via-black/70 to-black/90" />
       <SiteHeader overlay />
-      <main className="flex flex-1 items-center justify-center px-4 py-24">
+      <main id="main" tabIndex={-1} className="flex flex-1 items-center justify-center px-4 py-24 outline-none">
         <div className="fade-up w-full max-w-md rounded-3xl border border-white/15 bg-black/65 p-7 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md sm:p-9">
           <div className="text-center">
             <div className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--gold-deep)] text-xl text-white">✦</div>
