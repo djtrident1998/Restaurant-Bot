@@ -10,7 +10,7 @@ import { SplitBill } from "@/components/SplitBill";
 import { cancelEligibility } from "@/lib/cancel";
 import type { OrderRecord } from "@/lib/auth/store";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentAccount } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
 
 export const metadata: Metadata = { title: "Your account", robots: { index: false, follow: false } };
@@ -22,11 +22,11 @@ function cancelMinutesLeft(o: OrderRecord): number {
 }
 
 export default async function AccountPage() {
-  const current = await getCurrentUser();
-  if (!current) redirect("/login");
+  const account = await getCurrentAccount(); // one storage read, shared with the header
+  if (!account) redirect("/login");
+  const current = account.user;
   const store = getStore();
-  const user = await store.findById(current.id);
-  const orders = [...(user?.orders ?? [])].sort((a, b) => b.placedAt - a.placedAt);
+  const orders = [...account.orders].sort((a, b) => b.placedAt - a.placedAt);
 
   return (
     <div className="flex min-h-dvh flex-col">
