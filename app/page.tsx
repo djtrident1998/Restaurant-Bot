@@ -39,20 +39,20 @@ export default function Home() {
 
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center">
           <p className="fade-up inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white backdrop-blur sm:text-sm">
-            North Indian<span className="hidden sm:inline"> Fine Dining</span> · AI Waiter
+            North Indian Fine Dining
           </p>
           <h1 className="font-display fade-up mt-6 text-6xl leading-[0.95] tracking-tight text-ivory [animation-delay:120ms] sm:text-8xl">
             Spice <span className="italic text-gold-soft">Route</span>
           </h1>
           <p className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-ivory/90 [animation-delay:260ms] sm:text-xl">
-            Hungry? Tell our AI waiter what you fancy. Order for yourself or the whole table — and split the bill in a tap.
+            An evening along the old spice road — saffron, smoke and slow-cooked tradition, served by a waiter who knows every dish.
           </p>
           <div className="fade-up mt-10 flex flex-col items-center gap-3 [animation-delay:400ms] sm:flex-row">
             <Link href="/order" className="btn-gold px-9 py-3.5 text-base">
-              Order now
+              Order with our AI waiter
             </Link>
-            <Link href="#how" className="btn-ghost bg-white/10 px-9 py-3.5 text-base text-white backdrop-blur">
-              How it works
+            <Link href="#signature" className="btn-ghost bg-white/10 px-9 py-3.5 text-base text-white backdrop-blur">
+              Discover the menu
             </Link>
           </div>
         </div>
