@@ -15,6 +15,10 @@ export interface OrderRecord {
   placedAt: number;
   lines: { name: string; qty: number; lineTotal: number }[];
   feedback?: OrderFeedback;
+  /** Set when the customer cancelled within the cancellation window. */
+  cancelledAt?: number;
+  /** Refund recorded for a cancelled order (always the full order total; see lib/cancel.ts). */
+  refund?: { amount: number; ref: string; at: number };
 }
 
 export interface UserRecord {
@@ -36,6 +40,12 @@ export interface UserStore {
   addOrder(userId: string, order: OrderRecord): Promise<void>;
   /** Save (or replace) the rating for one of THIS user's orders. false if the user or order doesn't exist. */
   setFeedback(userId: string, orderId: string, feedback: OrderFeedback): Promise<boolean>;
+  /**
+   * Atomically change one of THIS user's orders: `change` receives the freshly read order, mutates it, and returns
+   * true to save (false = leave it as is). On Blob it is re-run on a fresh read if another write got in between, so
+   * a decision like "cancel only if not already cancelled" can't be raced. Returns the order, or null if not found.
+   */
+  updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean): Promise<OrderRecord | null>;
 }
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -69,6 +79,12 @@ class MemoryStore implements UserStore {
     if (!o) return false;
     o.feedback = feedback;
     return true;
+  }
+  async updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean) {
+    const o = this.users.get(userId)?.orders.find((x) => x.id === orderId);
+    if (!o) return null;
+    change(o);
+    return o;
   }
 }
 
@@ -112,6 +128,13 @@ class FileStore implements UserStore {
     o.feedback = feedback;
     this.write(db);
     return true;
+  }
+  async updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean) {
+    const db = this.read();
+    const o = db[userId]?.orders.find((x) => x.id === orderId);
+    if (!o) return null;
+    if (change(o)) this.write(db);
+    return o;
   }
 }
 
@@ -186,6 +209,27 @@ class BlobStore implements UserStore {
       }
     }
     return false;
+  }
+  async updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const cur = await this.read(userId);
+      const o = cur?.user.orders.find((x) => x.id === orderId);
+      if (!cur || !o) return null;
+      if (!change(o)) return o; // nothing to save
+      try {
+        await put(this.pathFor(userId), JSON.stringify(cur.user), {
+          access: "private",
+          contentType: "application/json",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          ifMatch: cur.etag, // changed in between -> re-read and decide again
+        });
+        return o;
+      } catch (e) {
+        if (attempt === 3) throw e;
+      }
+    }
+    return null;
   }
 }
 

@@ -1,6 +1,7 @@
 import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import type { ReactNode } from "react";
 import { MenuCard, type MenuCardItem } from "./MenuCard";
+import { CancelOrder } from "./CancelOrder";
 import { OrderConfirm } from "./OrderConfirm";
 import type { CartViewData } from "./CartPanel";
 
@@ -93,6 +94,10 @@ export function MessageList({ messages, busy, onAdd }: Props) {
                 }
                 if (name === "place_order" && out?.ok && out.orderId && out.cart) {
                   return <OrderConfirm key={i} orderId={out.orderId} cart={out.cart} />;
+                }
+                if (name === "cancel_offer" && out?.ok && out.orderId) {
+                  const o = out as { orderId: string; total: number; minutesLeft: number };
+                  return <CancelOrder key={i} orderId={o.orderId} total={o.total} minutesLeft={o.minutesLeft} />;
                 }
               }
               return null;

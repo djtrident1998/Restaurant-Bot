@@ -9,6 +9,8 @@ export interface InvoiceData {
   customer: { name: string; email: string };
   lines: { name: string; qty: number; unit: number; amount: number }[];
   total: number;
+  /** Present when the order was cancelled: the invoice is stamped CANCELLED and shows the refund. */
+  cancelled?: { date: string; refundAmount: number; refundRef: string };
 }
 
 export const invoiceNumberFor = (orderId: string) => `INV-${orderId}`;
@@ -42,6 +44,9 @@ export function buildInvoiceData(
     customer: { name: user.name, email: user.email },
     lines,
     total: lines.reduce((n, l) => n + l.amount, 0),
+    cancelled: order.cancelledAt
+      ? { date: formatInvoiceDate(order.cancelledAt), refundAmount: order.refund?.amount ?? order.total, refundRef: order.refund?.ref ?? "" }
+      : undefined,
   };
 }
 
@@ -124,6 +129,16 @@ export async function renderInvoicePdf(d: InvoiceData): Promise<Uint8Array> {
   page.drawRectangle({ x: M + W - 210, y: y - 10, width: 210, height: 30, color: rgb(0.1, 0.09, 0.08) });
   text("TOTAL", M + W - 198, y, 10, bold, rgb(0.9, 0.78, 0.5));
   right(money(d.total), colAmt - 8, y - 1, 13, bold, rgb(0.96, 0.9, 0.78));
+
+  // Cancelled orders: stamp + refund line
+  if (d.cancelled) {
+    page.drawRectangle({ x: M, y: y - 10, width: 200, height: 30, borderColor: rgb(0.7, 0.15, 0.15), borderWidth: 1.5, color: rgb(1, 1, 1) });
+    text("CANCELLED", M + 38, y, 14, bold, rgb(0.7, 0.15, 0.15));
+    y -= 38;
+    text(`Cancelled on ${d.cancelled.date}`, M, y, 9, sans, muted);
+    y -= 14;
+    text(`Refund of ${money(d.cancelled.refundAmount)} recorded${d.cancelled.refundRef ? ` (ref ${d.cancelled.refundRef})` : ""}. Amount payable: ${money(0)}.`, M, y, 9, bold, ink, 120);
+  }
 
   // Notes
   const notes = [

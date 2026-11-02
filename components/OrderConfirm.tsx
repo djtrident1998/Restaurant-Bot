@@ -1,4 +1,5 @@
 import type { CartViewData } from "./CartPanel";
+import { CancelOrder } from "./CancelOrder";
 import { FeedbackForm } from "./FeedbackForm";
 
 export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartViewData }) {
@@ -33,6 +34,7 @@ export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartVie
           </a>
         </div>
       </div>
+      <CancelOrder orderId={orderId} total={cart.total} />
       <FeedbackForm orderId={orderId} />
     </div>
   );

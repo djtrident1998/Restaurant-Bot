@@ -10,6 +10,7 @@ import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardr
 import { beginTurn, getOrders, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
+import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { COURSE_ASK_TEXT, courseOutputs, detectMenuIntent } from "@/lib/course";
 import { detectOrderIntent, handleOrderIntent, type StaticOutput } from "@/lib/orderFlow";
@@ -105,6 +106,13 @@ export async function POST(req: Request) {
     const result = handleOrderIntent(sessionId, orderIntent, signedIn);
     await saveOrdersToAccount(sessionId, ordersBefore, user?.id);
     return staticReply(result.text, result.outputs);
+  }
+
+  // Cancel / refund requests are answered by code too (never by the AI): explain the rule and offer a confirm button.
+  const cancelIntent = detectCancelIntent(userText);
+  if (cancelIntent) {
+    const r = await handleCancelIntent(getStore(), user?.id, cancelIntent);
+    return staticReply(r.text, r.outputs);
   }
 
   const limit = checkRateLimit(ip, Date.now(), limits);

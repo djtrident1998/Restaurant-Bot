@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CancelOrder } from "@/components/CancelOrder";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { cancelEligibility } from "@/lib/cancel";
+import type { OrderRecord } from "@/lib/auth/store";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStore } from "@/lib/auth/store";
 
 export const metadata: Metadata = { title: "Your account — Spice Route" };
+
+/** Whole minutes left in the cancellation window (0 if over or already cancelled). */
+function cancelMinutesLeft(o: OrderRecord): number {
+  const e = cancelEligibility(o);
+  return e.ok ? Math.max(1, Math.ceil(e.msLeft / 60_000)) : 0;
+}
 
 export default async function AccountPage() {
   const current = await getCurrentUser();
@@ -62,13 +71,30 @@ export default async function AccountPage() {
                     Download invoice (PDF)
                   </a>
                 </div>
-                <div className="mt-3">
-                  <FeedbackForm
-                    orderId={o.id}
-                    initial={o.feedback ? { rating: o.feedback.rating, comment: o.feedback.comment } : undefined}
-                    title="Rate this order"
-                  />
-                </div>
+                {o.cancelledAt ? (
+                  <div className="mt-3 rounded-xl border border-gold/40 bg-black/30 p-4 text-sm" data-testid="order-cancelled">
+                    <p className="font-display text-gold-soft">Cancelled</p>
+                    <p className="mt-1 text-ivory/90">
+                      Refund of ₹{o.refund?.amount ?? o.total} recorded{o.refund ? ` (ref ${o.refund.ref})` : ""} on{" "}
+                      {new Date(o.cancelledAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {cancelMinutesLeft(o) > 0 && (
+                      <div className="mt-3">
+                        <CancelOrder orderId={o.id} total={o.total} minutesLeft={cancelMinutesLeft(o)} refreshAfter />
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <FeedbackForm
+                        orderId={o.id}
+                        initial={o.feedback ? { rating: o.feedback.rating, comment: o.feedback.comment } : undefined}
+                        title="Rate this order"
+                      />
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ul>
