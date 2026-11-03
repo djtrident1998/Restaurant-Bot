@@ -31,7 +31,7 @@ check("legal/about pages, account, sign-in and order rail show the credit", ["co
 check("page metadata names the author", /authors:/.test(src("app/layout.tsx")) && /creator: CREATOR_NAME/.test(src("app/layout.tsx")));
 check("share image carries the credit", /CREATOR_NAME/.test(src("app/opengraph-image.tsx")));
 check("structured data names the creator", /creator:/.test(src("app/page.tsx")));
-check("About page exists and lists the documents", /EVAL_REPORT\.md/.test(src("app/about/page.tsx")) && /PRD\.md/.test(src("app/about/page.tsx")));
+check("About page links the PRD (PDF and Markdown), the one document that covers the rest", /Spice-Route-PRD\.pdf/.test(src("app/about/page.tsx")) && /PRD\.md/.test(src("app/about/page.tsx")) && !/EVAL_REPORT\.md|GUARDRAILS\.md|COST_FRAMEWORK\.md|GLOBAL_STANDARD\.md/.test(src("app/about/page.tsx")));
 check("About page is in the sitemap", /\/about/.test(src("app/sitemap.ts")));
 check("README credits the creator", /Dibyajyoti Ray/.test(src("README.md")));
 
