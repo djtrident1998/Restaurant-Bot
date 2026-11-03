@@ -1,4 +1,4 @@
-import { get, put } from "@vercel/blob";
+import { blobCas, makeCas } from "./blobCas";
 
 // A shared DAILY budget, used as the hard ceiling on calls to the paid model. The in-memory rate limits are per server
 // instance (each Vercel instance has its own memory), so under heavy traffic they multiply; this counter lives in the
@@ -23,25 +23,22 @@ export class MemoryCounter implements CounterStore {
 }
 
 export class BlobCounter implements CounterStore {
+  private cas: ReturnType<typeof makeCas>;
+  constructor(cas: ReturnType<typeof makeCas> = blobCas()) {
+    this.cas = cas;
+  }
   async take(key: string, limit: number) {
-    const path = `budget/${key}.json`;
-    const opts = { access: "private" as const, contentType: "application/json", addRandomSuffix: false };
-    for (let attempt = 0; attempt < 6; attempt++) {
-      try {
-        const cur = await get(path, { access: "private", useCache: false });
-        if (!cur || cur.statusCode !== 200) {
-          await put(path, JSON.stringify({ n: 1 }), { ...opts, allowOverwrite: false }); // first call of the day
-          return limit > 0;
-        }
-        const { n } = JSON.parse(await new Response(cur.stream).text()) as { n: number };
-        if (n >= limit) return false;
-        await put(path, JSON.stringify({ n: n + 1 }), { ...opts, allowOverwrite: true, ifMatch: cur.blob.etag });
-        return true;
-      } catch {
-        // Lost a race with another request (conditional write failed) or a transient error: re-read and retry.
-      }
+    try {
+      // Atomic read-increment-write (retried if another request got in first); a missing file means "first call of the day".
+      return await this.cas.update<{ n: number }, boolean>(`budget/${key}.json`, (cur) => {
+        const n = cur?.n ?? 0;
+        if (n >= limit) return { write: false, result: false };
+        return { write: true, next: { n: n + 1 }, result: true };
+      });
+    } catch (e) {
+      console.error("[budget] could not update the shared counter (paid model stays off)", String(e).slice(0, 160));
+      return false; // fail closed
     }
-    return false; // fail closed
   }
 }
 

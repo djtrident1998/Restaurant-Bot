@@ -17,6 +17,9 @@ either avoids a model call, shrinks it, or caps it. Offline tests: `npx tsx scri
 | 8 | **Small prompts & outputs** | Condensed system prompt, compact tool views for the model (`toModelOutput`), `maxOutputTokens` 1200, step cap. | `lib/prompt.ts`, `lib/tools.ts`, `lib/agent.ts` |
 | 9 | **Usage logging** | Each answered turn logs `[usage] {"model","paid","in","out","steps"}` in Vercel runtime logs. | `app/api/chat/route.ts` |
 
+### Note on the shared counter (3 Nov 2026)
+The shared daily counter, accounts and bookings all use conditional writes on Vercel Blob. In production a conditional write failed with "ETag mismatch" (found while testing table booking). The counter swallowed that error and **failed closed**, so the worst effect was that the paid model stayed off, never extra spend. All Blob writes now go through one tested helper (`lib/blobCas.ts`): the version comes from `head()`, stale reads are re-read instead of written back, and failures are logged (`/api/health/storage` runs a live self-check).
+
 ## Tuning (Vercel env vars; redeploy to apply)
 
 | Variable | Default | Meaning |

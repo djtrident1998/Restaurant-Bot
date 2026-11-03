@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { get, put } from "@vercel/blob";
+import { blobCas, makeCas } from "../blobCas";
 import type { Booking } from "../booking";
 
 // Bookings are stored one file per day, shared by EVERY customer, because table capacity is shared. Updates are atomic:
@@ -63,35 +63,23 @@ class FileBookingStore implements BookingStore {
 // ---------- Vercel Blob (production, private) ----------
 class BlobBookingStore implements BookingStore {
   kind = "blob" as const;
-  private pathFor = (date: string) => `bookings/${date}.json`;
-  private async load(date: string): Promise<{ day: Booking[]; etag: string | null }> {
-    const res = await get(this.pathFor(date), { access: "private", useCache: false });
-    if (!res || res.statusCode !== 200) return { day: [], etag: null };
-    return { day: JSON.parse(await new Response(res.stream).text()) as Booking[], etag: res.blob.etag };
+  private cas: ReturnType<typeof makeCas>;
+  constructor(cas: ReturnType<typeof makeCas> = blobCas()) {
+    this.cas = cas;
   }
+  private pathFor = (date: string) => `bookings/${date}.json`;
   async read(date: string) {
-    return (await this.load(date)).day;
+    // Availability display only: a plain read is enough (booking itself re-checks inside the atomic update).
+    const r = await this.cas.backend.get(this.pathFor(date));
+    return r ? (JSON.parse(r.text) as Booking[]) : [];
   }
   async update<T>(date: string, fn: (day: Booking[]) => { write: boolean; result: T }) {
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const { day, etag } = await this.load(date);
+    // The first booking of a day creates the file; later ones replace it only if it is unchanged since they read it.
+    return this.cas.update<Booking[], T>(this.pathFor(date), (cur) => {
+      const day = cur ?? [];
       const r = fn(day);
-      if (!r.write) return r.result;
-      try {
-        await put(this.pathFor(date), JSON.stringify(day), {
-          access: "private",
-          contentType: "application/json",
-          addRandomSuffix: false,
-          // first booking of the day creates the file (fails if someone else just did); later ones need an unchanged ETag
-          allowOverwrite: etag !== null,
-          ...(etag ? { ifMatch: etag } : {}),
-        });
-        return r.result;
-      } catch (e) {
-        if (attempt === 5) throw e; // lost the race 6 times, or storage is down
-      }
-    }
-    throw new Error("unreachable");
+      return { write: r.write, next: day, result: r.result };
+    });
   }
 }
 
@@ -104,4 +92,4 @@ export function getBookingStore(env: NodeJS.ProcessEnv = process.env): BookingSt
   return store;
 }
 
-export const __testing = { MemoryBookingStore };
+export const __testing = { MemoryBookingStore, BlobBookingStore };

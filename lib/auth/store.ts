@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { del, get, put } from "@vercel/blob";
+import { del } from "@vercel/blob";
+import { blobCas, makeCas } from "../blobCas";
 import type { BookingRef } from "../booking";
 
 export interface OrderFeedback {
@@ -175,30 +176,27 @@ class FileStore implements UserStore {
 }
 
 // ---------- Vercel Blob (production, private) ----------
+// Every change goes through the shared compare-and-swap helper (lib/blobCas.ts): the file is re-read and the change re-applied
+// if anything else touched it in between, and a stale read is never written back.
 class BlobStore implements UserStore {
   kind = "blob" as const;
+  private cas: ReturnType<typeof makeCas>;
+  constructor(cas: ReturnType<typeof makeCas> = blobCas()) {
+    this.cas = cas;
+  }
   private pathFor = (id: string) => `accounts/${id}.json`;
 
-  private async read(id: string): Promise<{ user: UserRecord; etag: string } | null> {
-    const res = await get(this.pathFor(id), { access: "private", useCache: false });
-    if (!res || res.statusCode !== 200) return null;
-    const text = await new Response(res.stream).text();
-    return { user: JSON.parse(text) as UserRecord, etag: res.blob.etag };
-  }
   async findById(id: string) {
-    return (await this.read(id))?.user ?? null;
+    // A plain read (no version lookup) keeps page loads fast; writes below re-read with their own version check.
+    const r = await this.cas.backend.get(this.pathFor(id));
+    return r ? (JSON.parse(r.text) as UserRecord) : null;
   }
   async findByEmail(email: string) {
     return this.findById(userIdFor(email));
   }
   async create(user: UserRecord) {
     try {
-      await put(this.pathFor(user.id), JSON.stringify(user), {
-        access: "private",
-        contentType: "application/json",
-        addRandomSuffix: false,
-        allowOverwrite: false, // fails if the account already exists
-      });
+      await this.cas.backend.put(this.pathFor(user.id), JSON.stringify(user), { etag: null }); // fails if the account already exists
       return true;
     } catch (e) {
       if (/already exists|exists/i.test(String((e as Error).message))) return false;
@@ -206,89 +204,35 @@ class BlobStore implements UserStore {
     }
   }
   async addOrder(userId: string, order: OrderRecord) {
-    // Optimistic concurrency: write only if nobody changed the record since we read it; retry a few times.
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const cur = await this.read(userId);
-      if (!cur) return;
-      cur.user.orders.push(order);
-      try {
-        await put(this.pathFor(userId), JSON.stringify(cur.user), {
-          access: "private",
-          contentType: "application/json",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          ifMatch: cur.etag,
-        });
-        return;
-      } catch (e) {
-        if (attempt === 3) throw e;
-      }
-    }
+    await this.cas.update<UserRecord, void>(this.pathFor(userId), (u) => {
+      if (!u) return { write: false, result: undefined };
+      u.orders.push(order);
+      return { write: true, next: u, result: undefined };
+    });
   }
   async setFeedback(userId: string, orderId: string, feedback: OrderFeedback) {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const cur = await this.read(userId);
-      const o = cur?.user.orders.find((x) => x.id === orderId);
-      if (!cur || !o) return false;
+    return this.cas.update<UserRecord, boolean>(this.pathFor(userId), (u) => {
+      const o = u?.orders.find((x) => x.id === orderId);
+      if (!u || !o) return { write: false, result: false };
       o.feedback = feedback;
-      try {
-        await put(this.pathFor(userId), JSON.stringify(cur.user), {
-          access: "private",
-          contentType: "application/json",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          ifMatch: cur.etag, // another write in between -> re-read and retry
-        });
-        return true;
-      } catch (e) {
-        if (attempt === 3) throw e;
-      }
-    }
-    return false;
+      return { write: true, next: u, result: true };
+    });
   }
   async updateOrder(userId: string, orderId: string, change: (order: OrderRecord) => boolean) {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const cur = await this.read(userId);
-      const o = cur?.user.orders.find((x) => x.id === orderId);
-      if (!cur || !o) return null;
-      if (!change(o)) return o; // nothing to save
-      try {
-        await put(this.pathFor(userId), JSON.stringify(cur.user), {
-          access: "private",
-          contentType: "application/json",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          ifMatch: cur.etag, // changed in between -> re-read and decide again
-        });
-        return o;
-      } catch (e) {
-        if (attempt === 3) throw e;
-      }
-    }
-    return null;
+    return this.cas.update<UserRecord, OrderRecord | null>(this.pathFor(userId), (u) => {
+      const o = u?.orders.find((x) => x.id === orderId);
+      if (!u || !o) return { write: false, result: null };
+      return { write: change(o), next: u, result: o };
+    });
   }
   async updateUser(userId: string, change: (user: UserRecord) => boolean) {
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const cur = await this.read(userId);
-      if (!cur) return null;
-      if (!change(cur.user)) return cur.user;
-      try {
-        await put(this.pathFor(userId), JSON.stringify(cur.user), {
-          access: "private",
-          contentType: "application/json",
-          addRandomSuffix: false,
-          allowOverwrite: true,
-          ifMatch: cur.etag,
-        });
-        return cur.user;
-      } catch (e) {
-        if (attempt === 3) throw e;
-      }
-    }
-    return null;
+    return this.cas.update<UserRecord, UserRecord | null>(this.pathFor(userId), (u) => {
+      if (!u) return { write: false, result: null };
+      return { write: change(u), next: u, result: u };
+    });
   }
   async deleteUser(userId: string) {
-    if (!(await this.read(userId))) return false;
+    if (!(await this.findById(userId))) return false;
     await del(this.pathFor(userId));
     return true;
   }
@@ -304,4 +248,4 @@ export function getStore(env: NodeJS.ProcessEnv = process.env): UserStore {
   return store;
 }
 
-export const __testing = { MemoryStore };
+export const __testing = { MemoryStore, BlobStore };
