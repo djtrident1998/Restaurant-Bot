@@ -5,6 +5,7 @@ import { __testing as bookingTesting } from "../lib/bookings/store";
 import { __testing as userTesting, userIdFor, type UserRecord } from "../lib/auth/store";
 import { hashPassword } from "../lib/auth/password";
 import { deleteAccount } from "../lib/account";
+import { safeNext } from "../lib/auth/next";
 import { DEFAULT_SERVICE, needsBooking, parseService, serviceLabel, serviceShort, validateService } from "../lib/service";
 import { getService, setService, userConfirm, isUserConfirmed, addLine, checkout, snapshotSession, restoreSession, viewCart, getOrders, resetSession } from "../lib/cart";
 import { detectOrderIntent, handleOrderIntent } from "../lib/orderFlow";
@@ -168,6 +169,7 @@ const mkDay = (rows: Partial<Booking>[]): Booking[] => rows.map((r, i) => ({ id:
   check("dining needs a booked table before food can be ordered", needsBooking({ type: "dine-in" }) && !needsBooking({ type: "dine-in", bookingId: "BK-261105-482" }) && !needsBooking({ type: "delivery" }));
   check("a stranger's or past booking leaves dining locked", needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-999" }, refs, NOW)) && needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-482" }, undefined, NOW)));
   check("an own upcoming booking unlocks dining", !needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-482" }, refs, NOW)));
+  check("sign-in returns to /book or /order only (no open redirect)", safeNext("/book?date=2026-11-05&party=4&time=19%3A30") !== undefined && safeNext("/order?mode=dining") === "/order?mode=dining" && ["https://evil.com", "//evil.com", "/account", "/book/../x", "/book?x=<script>", "javascript:alert(1)", 5, undefined].every((v) => safeNext(v) === undefined));
   check("labels", serviceLabel({ type: "delivery" }) === "Delivery" && serviceLabel({ type: "dine-in" }) === "Dining — walk-in" && /table booked.*7:30 pm.*T5/.test(serviceLabel({ type: "dine-in", bookingId: "BK-261105-482" }, refs)));
   check("short labels", serviceShort({ type: "delivery" }) === "Delivery" && serviceShort({ type: "dine-in" }) === "Dine in" && serviceShort(undefined) === "");
 

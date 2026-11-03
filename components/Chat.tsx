@@ -16,6 +16,7 @@ import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
+import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
 import { DEFAULT_SERVICE, parseService, serviceLabel, type Service, type ServiceType } from "@/lib/service";
@@ -228,17 +229,17 @@ export function Chat({
     return (
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:pt-8">
         <section className="card p-3 sm:p-5" data-testid="booking-gate">
-          <ServiceBar service={service} onChange={setService} bookings={bookings} signedIn={signedIn} />
+          <ServiceBar service={service} onChange={setService} bookings={bookings} signedIn={signedIn} compact />
           <div className="mt-4 rounded-2xl border border-gold/15 bg-gradient-to-br from-[#fff1ee] via-[#fff7f2] to-panel p-5 sm:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-soft">Dining</p>
             <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">Book your table first</h2>
             <p className="mt-2 text-sm text-muted">Once your table is booked, you can pre-order your food here so it is ready when you arrive.</p>
             {!signedIn ? (
               <div className="mt-4 flex flex-wrap gap-3">
-                <Link href="/login" className="btn-gold px-6 py-3 text-sm">
+                <Link href={withNext("/login", "/book")} className="btn-gold px-6 py-3 text-sm">
                   Sign in to book
                 </Link>
-                <Link href="/signup" className="btn-ghost px-6 py-3 text-sm">
+                <Link href={withNext("/signup", "/book")} className="btn-ghost px-6 py-3 text-sm">
                   Create account
                 </Link>
               </div>

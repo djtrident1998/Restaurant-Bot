@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { login, signup } from "@/app/actions/auth";
 import type { AuthFormState } from "@/lib/auth/schemas";
+import { withNext } from "@/lib/auth/next";
 
 const field = "mt-1.5 w-full rounded-xl border border-line bg-ink px-4 py-3 text-ivory outline-none placeholder:text-muted/60 focus:border-gold";
 
-export function AuthForm({ mode, notice }: { mode: "login" | "signup"; notice?: string }) {
+export function AuthForm({ mode, notice, next }: { mode: "login" | "signup"; notice?: string; next?: string }) {
   const [state, action, pending] = useActionState<AuthFormState, FormData>(mode === "signup" ? signup : login, undefined);
   const fe = state?.fieldErrors;
   const isSignup = mode === "signup";
@@ -15,6 +16,7 @@ export function AuthForm({ mode, notice }: { mode: "login" | "signup"; notice?: 
 
   return (
     <form action={action} className="space-y-4" noValidate>
+      {next && <input type="hidden" name="next" value={next} />}
       {state?.error && (
         <p role="alert" className="rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-200">
           {state.error}
@@ -90,14 +92,14 @@ export function AuthForm({ mode, notice }: { mode: "login" | "signup"; notice?: 
         {isSignup ? (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="text-gold-soft underline-offset-4 hover:underline">
+            <Link href={withNext("/login", next)} className="text-gold-soft underline-offset-4 hover:underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             New to Spice Route?{" "}
-            <Link href="/signup" className="text-gold-soft underline-offset-4 hover:underline">
+            <Link href={withNext("/signup", next)} className="text-gold-soft underline-offset-4 hover:underline">
               Create an account
             </Link>
           </>

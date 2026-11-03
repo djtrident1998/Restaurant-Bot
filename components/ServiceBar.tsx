@@ -8,7 +8,7 @@ import type { Service, ServiceType } from "@/lib/service";
  * Delivery or Dining: a clear either/or at the top of the ordering screen. Delivery is the existing ordering flow.
  * Dining orders can be tied to one of the customer's upcoming table bookings. The choice is validated on the server.
  */
-export function ServiceBar({ service, onChange, bookings, signedIn }: { service: Service; onChange: (s: Service) => void; bookings: BookingRef[]; signedIn: boolean }) {
+export function ServiceBar({ service, onChange, bookings, signedIn, compact = false }: { service: Service; onChange: (s: Service) => void; bookings: BookingRef[]; signedIn: boolean; compact?: boolean }) {
   const pick = (type: ServiceType) => onChange(type === "delivery" ? { type } : { type, bookingId: service.type === "dine-in" ? service.bookingId : undefined });
 
   return (
@@ -41,7 +41,8 @@ export function ServiceBar({ service, onChange, bookings, signedIn }: { service:
         })}
       </div>
 
-      {service.type === "dine-in" && (
+      {/* `compact`: the booking gate below already offers the table choice or "Book a table", so don't repeat it here. */}
+      {service.type === "dine-in" && !compact && (
         <div className="mt-2 rounded-xl border border-line bg-panel px-3 py-2.5 text-sm">
           {!signedIn ? (
             <p className="text-muted">

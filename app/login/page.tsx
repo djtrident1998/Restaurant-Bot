@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/AuthForm";
 import { AuthShell } from "@/components/AuthShell";
+import { safeNext } from "@/lib/auth/next";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
-  if (await getCurrentUser()) redirect("/order");
-  const { deleted } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ deleted?: string; next?: string }> }) {
+  const { deleted, next: rawNext } = await searchParams;
+  const next = safeNext(rawNext);
+  if (await getCurrentUser()) redirect(next ?? "/order");
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to see your past orders and be greeted by name.">
       {deleted === "1" && (
@@ -16,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           Your account has been deleted: your details, orders and ratings are gone. Thank you for trying Spice Route.
         </p>
       )}
-      <AuthForm mode="login" />
+      <AuthForm mode="login" next={next} />
     </AuthShell>
   );
 }
