@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
 import type { Service, ServiceType } from "@/lib/service";
+import { CancelBooking } from "./CancelBooking";
 
 /**
  * Delivery or Dining: a clear either/or at the top of the ordering screen. Delivery is the existing ordering flow.
  * Dining orders can be tied to one of the customer's upcoming table bookings. The choice is validated on the server.
  */
 export function ServiceBar({ service, onChange, bookings, signedIn, compact = false }: { service: Service; onChange: (s: Service) => void; bookings: BookingRef[]; signedIn: boolean; compact?: boolean }) {
+  const selected = service.type === "dine-in" ? bookings.find((b) => b.id === service.bookingId) : undefined;
   const pick = (type: ServiceType) => onChange(type === "delivery" ? { type } : { type, bookingId: service.type === "dine-in" ? service.bookingId : undefined });
 
   return (
@@ -73,6 +75,7 @@ export function ServiceBar({ service, onChange, bookings, signedIn, compact = fa
               <Link href="/book" className="btn-ghost shrink-0 px-4 py-2 text-sm font-semibold">
                 Book a table
               </Link>
+              {selected && <CancelBooking booking={selected} onCancelled={() => onChange({ type: "dine-in" })} />}
             </div>
           )}
         </div>

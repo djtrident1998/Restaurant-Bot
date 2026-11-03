@@ -16,6 +16,7 @@ import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
+import { CancelBooking } from "./CancelBooking";
 import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
@@ -248,17 +249,14 @@ export function Chat({
                 <p className="text-sm font-semibold text-ivory">You have a table booked. Pre-order for:</p>
                 <ul className="mt-2 space-y-2">
                   {bookings.map((b) => (
-                    <li key={b.id}>
-                      <button
-                        type="button"
-                        onClick={() => setService({ type: "dine-in", bookingId: b.id })}
-                        className="w-full rounded-xl border-2 border-line bg-panel px-4 py-3 text-left text-sm transition hover:border-gold"
-                      >
+                    <li key={b.id} className="rounded-xl border-2 border-line bg-panel px-4 pt-3 pb-1 transition hover:border-gold">
+                      <button type="button" onClick={() => setService({ type: "dine-in", bookingId: b.id })} className="block w-full text-left text-sm">
                         <span className="font-semibold text-ivory">
                           {formatDate(b.date)} · {formatTime(b.time)} · party of {b.party}
                         </span>
                         <span className="block text-muted">Table {b.table} · pre-order food →</span>
                       </button>
+                      <CancelBooking booking={b} />
                     </li>
                   ))}
                 </ul>
