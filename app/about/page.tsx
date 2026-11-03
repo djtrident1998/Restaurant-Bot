@@ -5,23 +5,18 @@ import { CREATOR_GITHUB, CREATOR_NAME, REPO_URL, SITE_NAME, creatorLinkedIn, doc
 
 export const metadata: Metadata = {
   title: "About this project",
-  description: `${SITE_NAME} is an AI restaurant-ordering product designed and built by ${CREATOR_NAME}, with a PRD, code-enforced guardrails and a measured eval suite.`,
+  description: `${SITE_NAME} is an AI restaurant-ordering product designed and built by ${CREATOR_NAME}, with a full PRD, code-enforced guardrails and a measured eval suite.`,
 };
 
-const DOCS = [
-  { file: "PRD.md", label: "Product requirements (PRD)", note: "Problem, users, metrics, scope, risks" },
-  { file: "GUARDRAILS.md", label: "Guardrails", note: "Where each safety rule is enforced, and how it is tested" },
-  { file: "EVAL_REPORT.md", label: "Eval report", note: "46 labeled cases, prompt v1 vs v2" },
-  { file: "COST_FRAMEWORK.md", label: "Cost and token framework", note: "How it stays affordable under a traffic spike" },
-  { file: "GLOBAL_STANDARD.md", label: "Standards checklist", note: "What meets a global bar, and an honest list of gaps" },
-];
+// The PRD is the one document: it covers the problem, users, metrics, requirements, guardrails, evaluation plan, cost controls and risks.
+const PRD_PDF = "/Spice-Route-PRD.pdf";
 
 const BUILT_WITH = ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS", "Vercel AI SDK", "Groq · Gemini · Claude models", "Vercel (hosting + Blob storage)"];
 
 export default function AboutPage() {
   const linkedin = creatorLinkedIn();
   return (
-    <LegalPage title="About this project" updated="2 November 2026">
+    <LegalPage title="About this project" updated="3 November 2026">
       <section className="card flex items-center gap-4 p-5">
         <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--gold-deep)] text-2xl font-bold text-white" aria-hidden>
           DR
@@ -57,8 +52,9 @@ export default function AboutPage() {
         <h2>What&apos;s in it</h2>
         <ul>
           <li>An AI waiter that answers only from the real menu, with every total and split computed in code, never by the model.</li>
-          <li>Orders that need a signed-in customer&apos;s button press: the AI cannot place, cancel or refund anything.</li>
+          <li>Orders that need a signed-in customer&apos;s button press: the AI cannot place an order, and it only reads words into fields: cancels, refunds and bookings are carried out by checked code.</li>
           <li>Allergen Shield, group orders with bill splitting, voice input, cancel with refund, invoices and ratings.</li>
+          <li>Delivery or Dining at the start, table booking, and booking or cancelling by chat or voice in plain language.</li>
           <li>Free-first model failover with a hard daily cap on the paid model.</li>
           <li>Privacy controls (export and delete your data), accessibility checks, and security headers.</li>
         </ul>
@@ -68,23 +64,22 @@ export default function AboutPage() {
         <h2>The evidence</h2>
         <ul>
           <li>
-            <strong>Evals:</strong> on a 46-case labeled suite, tuning the prompt took hallucination from 4.3% to 0% and order safety from 66.7% to 100% (one run; see the report for caveats).
+            <strong>Evals:</strong> on a 46-case labeled suite, tuning the prompt took hallucination from 4.3% to 0% and order safety from 66.7% to 100% (one run; the PRD explains the caveats and the larger evaluation plan).
           </li>
           <li>
-            <strong>Tests:</strong> 500+ automated offline checks cover the deterministic parts: maths, ordering rules, cancel and refund, splits, privacy, contrast.
+            <strong>Tests:</strong> 750+ automated offline checks cover the deterministic parts: maths, ordering rules, cancel and refund, splits, table booking, privacy, contrast.
           </li>
         </ul>
-        <p className="mt-3 font-semibold">Read the documents:</p>
-        <ul>
-          {DOCS.map((d) => (
-            <li key={d.file}>
-              <a href={docUrl(d.file)} target="_blank" rel="noopener noreferrer">
-                {d.label}
-              </a>{" "}
-              — <span className="text-muted">{d.note}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-3 font-semibold">Read the product requirements document (PRD):</p>
+        <p className="mt-1 text-muted">Problem, users, metrics, requirements, how the AI works and its guardrails, the evaluation plan, cost controls, risks and roadmap, in one document.</p>
+        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+          <a href={PRD_PDF} target="_blank" rel="noopener noreferrer">
+            Read the PRD (PDF)
+          </a>
+          <a href={docUrl("PRD.md")} target="_blank" rel="noopener noreferrer">
+            Read the PRD (Markdown)
+          </a>
+        </p>
       </section>
 
       <section>
