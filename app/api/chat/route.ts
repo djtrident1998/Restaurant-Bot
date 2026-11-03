@@ -7,8 +7,9 @@ import { getLimits } from "@/lib/config";
 import { sanitizeHistory } from "@/lib/sanitize";
 import { takeDaily } from "@/lib/budget";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
-import { beginTurn, getOrders, restoreSession, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
-import { getCurrentUser } from "@/lib/auth/session";
+import { beginTurn, getOrders, restoreSession, setService, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
+import { getCurrentAccount, getCurrentUser } from "@/lib/auth/session";
+import { parseService, validateService } from "@/lib/service";
 import { getStore } from "@/lib/auth/store";
 import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
 import { checkRateLimit } from "@/lib/ratelimit";
@@ -56,6 +57,7 @@ async function saveOrdersToAccount(sessionId: string, before: number, userId: st
         total: o.cart.total,
         placedAt: o.placedAt,
         lines: o.cart.lines.map((l) => ({ name: l.name, qty: l.qty, lineTotal: l.lineTotal })),
+        service: o.service,
       });
   } catch (e) {
     console.error("[orders] could not save to account", String(e).slice(0, 200));
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
   // Cap the request size BEFORE parsing: the body is untrusted and every byte of history is potential token cost.
   const declared = Number(req.headers.get("content-length") ?? 0);
   if (declared > limits.maxBodyBytes) return Response.json({ error: "Request too large." }, { status: 413 });
-  let body: { messages?: UIMessage[]; sessionId?: string };
+  let body: { messages?: UIMessage[]; sessionId?: string; service?: unknown };
   try {
     const raw = await req.text();
     if (raw.length > limits.maxBodyBytes) return Response.json({ error: "Request too large." }, { status: 413 });
@@ -97,13 +99,18 @@ export async function POST(req: Request) {
   // The ordering buttons are deterministic too: Add to cart, Checkout and "Yes, place order" are answered by code
   // (same guarded tools, totals and confirm-button rule as the model path) — instant, free, and independent of AI outages.
   // Ordering requires an account: the signed-in user comes from the verified session cookie, never from the client.
-  const user = await getCurrentUser();
+  const account = await getCurrentAccount();
+  const user = account?.user;
   const signedIn = !!user;
+
+  // Delivery or Dining, as selected in the browser. It is validated here: a table booking can only be attached if it is
+  // one of THIS customer's own upcoming bookings (never trusted from the browser), otherwise the order is a walk-in.
+  setService(sessionId, validateService(parseService(body.service), account?.bookings));
 
   const orderIntent = detectOrderIntent(userText);
   if (orderIntent) {
     const ordersBefore = getOrders(sessionId).length;
-    const result = handleOrderIntent(sessionId, orderIntent, signedIn, user?.profile);
+    const result = handleOrderIntent(sessionId, orderIntent, signedIn, user?.profile, account?.bookings);
     await saveOrdersToAccount(sessionId, ordersBefore, user?.id);
     return staticReply(result.text, result.outputs);
   }

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { del, get, put } from "@vercel/blob";
+import type { BookingRef } from "../booking";
 
 export interface OrderFeedback {
   rating: number; // 1-5 stars
@@ -19,6 +20,8 @@ export interface OrderRecord {
   cancelledAt?: number;
   /** Refund recorded for a cancelled order (always the full order total; see lib/cancel.ts). */
   refund?: { amount: number; ref: string; at: number };
+  /** Delivery, or dining (optionally tied to a table booking). Older orders have no value and count as delivery. */
+  service?: { type: "delivery" | "dine-in"; bookingId?: string };
   /** Group order: how the bill is divided between people (see lib/split.ts). Amounts always add up to `total`. */
   split?: { mode: "equal" | "items"; people: { name: string; amount: number; paid: boolean }[]; assign?: number[][]; at: number };
 }
@@ -32,6 +35,8 @@ export interface UserRecord {
   orders: OrderRecord[];
   /** Allergen Shield: dietary needs applied across the app (see lib/profile.ts). */
   profile?: { vegOnly: boolean; avoid: string[] };
+  /** The customer's table bookings (a copy for the "Your bookings" list; the shared day files are the authority). */
+  bookings?: BookingRef[];
 }
 
 export interface UserStore {

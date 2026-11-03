@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { dummyHash, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { loginSchema, signupSchema, type AuthFormState } from "@/lib/auth/schemas";
 import { deleteAccount } from "@/lib/account";
+import { getBookingStore } from "@/lib/bookings/store";
 import { endSession, getCurrentUser, startSession } from "@/lib/auth/session";
 import { getStore, userIdFor } from "@/lib/auth/store";
 import { checkAuthLimit } from "@/lib/ratelimit";
@@ -66,7 +67,7 @@ export async function deleteMyAccount(_prev: AuthFormState, formData: FormData):
   const current = await getCurrentUser();
   if (!current) return { error: "Please sign in again first." };
   if (!checkAuthLimit(`delete:${current.id}:${await clientIp()}`)) return { error: TOO_MANY };
-  const r = await deleteAccount(getStore(), current.id, formData.get("password"));
+  const r = await deleteAccount(getStore(), current.id, formData.get("password"), getBookingStore());
   if (!r.ok) return { error: r.error };
   await endSession();
   redirect("/login?deleted=1"); // the sign-in page confirms the deletion

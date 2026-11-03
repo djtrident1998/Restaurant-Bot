@@ -15,10 +15,13 @@ export function CartPanel({
   cart,
   onCheckout,
   onAdjust,
+  serviceText,
   disabled,
   signedIn = false,
 }: {
   cart: CartViewData;
+  /** e.g. "Delivery" or "Dining — table booked Thu, 5 Nov at 7:30 pm (T5)". */
+  serviceText?: string;
   onCheckout: () => void;
   /** Change a dish's quantity by one (+1 / -1). Removing the last one takes the dish out of the cart. */
   onAdjust?: (line: CartLineView, delta: 1 | -1) => void;
@@ -73,6 +76,11 @@ export function CartPanel({
         </ul>
       )}
       <div className="mt-3 border-t border-line pt-3">
+        {serviceText && (
+          <p className="mb-2 rounded-lg bg-panel2 px-3 py-1.5 text-xs font-semibold text-ivory" data-testid="cart-service">
+            {serviceText}
+          </p>
+        )}
         <div className="flex items-center justify-between text-lg font-bold text-ivory">
           <span>To pay</span>
           <span data-testid="cart-total">₹{cart.total}</span>

@@ -6,11 +6,11 @@ export function Credit({ className = "" }: { className?: string }) {
   return (
     <p className={`text-xs text-muted ${className}`}>
       Designed &amp; built by{" "}
-      <a href={CREATOR_GITHUB} target="_blank" rel="noopener noreferrer" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
+      <a href={CREATOR_GITHUB} target="_blank" rel="noopener noreferrer" className="inline-block py-2 font-semibold text-gold-soft underline-offset-4 hover:underline">
         {CREATOR_NAME}
       </a>{" "}
       ·{" "}
-      <Link href="/about" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
+      <Link href="/about" className="inline-block py-2 font-semibold text-gold-soft underline-offset-4 hover:underline">
         About this project
       </Link>
     </p>

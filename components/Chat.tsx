@@ -15,6 +15,10 @@ import { MessageList } from "./MessageList";
 import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
+import { ServiceBar } from "./ServiceBar";
+import { StartChoice } from "./StartChoice";
+import type { BookingRef } from "@/lib/booking";
+import { DEFAULT_SERVICE, parseService, serviceLabel, type Service, type ServiceType } from "@/lib/service";
 
 const EMPTY_CART: CartViewData = { lines: [], itemCount: 0, total: 0 };
 
@@ -52,8 +56,27 @@ export interface LastOrder {
   items: string; // e.g. "2 × Chana Masala, 3 × Tandoori Roti"
 }
 
-export function Chat({ userName, signedIn = false, lastOrder, profile }: { userName?: string; signedIn?: boolean; lastOrder?: LastOrder; profile?: Profile }) {
+export function Chat({
+  userName,
+  signedIn = false,
+  lastOrder,
+  profile,
+  bookings = [],
+  initialMode,
+}: {
+  userName?: string;
+  signedIn?: boolean;
+  lastOrder?: LastOrder;
+  profile?: Profile;
+  /** The customer's upcoming confirmed table bookings (for choosing which table a dining order is for). */
+  bookings?: BookingRef[];
+  /** From a link like /order?mode=dining; otherwise the last choice on this device, otherwise delivery. */
+  initialMode?: ServiceType;
+}) {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [service, setService] = useState<Service>(initialMode ? { type: initialMode } : DEFAULT_SERVICE);
+  // Delivery / Dining is step one: until the customer has chosen (or arrived with a choice), the menu waits behind it.
+  const [chosen, setChosen] = useState<boolean>(!!initialMode);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
   const [input, setInput] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
@@ -75,6 +98,28 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionId(id);
   }, []);
+
+  // Restore the last Delivery / Dining choice on this device (unless a link chose one). Read after mount: no SSR mismatch.
+  useEffect(() => {
+    if (initialMode) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("spice-service") ?? "null");
+      if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setService(parseService(saved));
+        setChosen(true);
+      }
+    } catch {}
+  }, [initialMode]);
+
+  // Remember the choice on this device, but only once the customer has actually made one (otherwise the default would be
+  // saved and step one skipped next time). It also goes with every message, below; the server validates it.
+  useEffect(() => {
+    if (!chosen) return;
+    try {
+      localStorage.setItem("spice-service", JSON.stringify(service));
+    } catch {}
+  }, [service, chosen]);
 
   const transport = useMemo(
     () => new DefaultChatTransport({ api: "/api/chat", body: () => ({ sessionId }) }),
@@ -108,7 +153,7 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
 
   const send = (text: string) => {
     if (!sessionId || busy || !text.trim()) return;
-    sendMessage({ text });
+    sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
 
   // Voice: speak your question; the words appear in the box as you talk and are sent when you finish.
@@ -155,7 +200,7 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
     } catch {
       return;
     }
-    sendMessage({ text: CONFIRM_TEXT });
+    sendMessage({ text: CONFIRM_TEXT }, { body: { service } });
   };
 
   // Spoken or typed ordering commands act like the buttons: "place order" starts checkout; after the read-back,
@@ -233,6 +278,7 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
           <Credit className="px-1 pb-1 leading-relaxed" />
         </nav>
         <section className="card flex min-h-0 min-w-0 flex-col p-3 sm:p-4">
+          {chosen && <ServiceBar service={service} onChange={setService} bookings={bookings} signedIn={signedIn} />}
           {signedIn &&
             (hasProfile(profile) ? (
               <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-green-50 px-3 py-2 text-sm text-green-900" role="note">
@@ -254,8 +300,17 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {messages.length === 0 && (
               <div className="fade-up rounded-2xl border border-gold/15 bg-gradient-to-br from-[#fff1ee] via-[#fff7f2] to-panel p-5 sm:p-6">
+                {!chosen ? (
+                  <StartChoice
+                    onPick={(type) => {
+                      setService(type === "delivery" ? { type } : { type });
+                      setChosen(true);
+                    }}
+                  />
+                ) : (
+                  <>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-soft">{userName ? `Welcome back, ${userName}` : "Welcome"}</p>
-                <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">Hungry? Your waiter is ready</h2>
+                <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">{service.type === "dine-in" ? "Dining with us? Let's plan your meal" : "Hungry? Your waiter is ready"}</h2>
                 <p className="mt-2 max-w-xl text-sm text-muted">
                   I&apos;m your waiter for the evening. Tell me what you&apos;re in the mood for, or let me guide you through the menu.
                 </p>
@@ -288,6 +343,8 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
                 <div className="mt-5">
                   <CoursePicker title="What would you like to begin with?" onPick={send} disabled={!sessionId || busy} />
                 </div>
+                  </>
+                )}
               </div>
             )}
             <div className="mt-3">
@@ -390,6 +447,7 @@ export function Chat({ userName, signedIn = false, lastOrder, profile }: { userN
             </div>
           <CartPanel
             cart={cart}
+            serviceText={serviceLabel(service, bookings)}
             disabled={busy || !sessionId}
             signedIn={signedIn}
             onAdjust={(line, delta) => send(delta > 0 ? addRequestText(line.name, 1) : removeRequestText(line.name, 1))}

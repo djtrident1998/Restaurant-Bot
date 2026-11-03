@@ -1,9 +1,10 @@
 import type { CartViewData } from "./CartPanel";
 import { CancelOrder } from "./CancelOrder";
+import { serviceShort, type Service } from "@/lib/service";
 import { FeedbackForm } from "./FeedbackForm";
 import { SplitBill } from "./SplitBill";
 
-export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartViewData }) {
+export function OrderConfirm({ orderId, cart, service }: { orderId: string; cart: CartViewData; service?: Service }) {
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-[var(--veg)]/30 bg-gradient-to-b from-[#effaf2] to-panel p-5 shadow-[0_12px_30px_-18px_rgba(26,156,75,0.5)]">
@@ -15,6 +16,11 @@ export function OrderConfirm({ orderId, cart }: { orderId: string; cart: CartVie
           <p className="mt-1 text-sm text-muted">
             Order ID <span className="font-mono font-semibold text-ivory">{orderId}</span>
           </p>
+          {service && (
+            <p className="mt-2 inline-block rounded-full bg-panel2 px-3 py-1 text-xs font-bold text-ivory" data-testid="order-service">
+              {service.type === "delivery" ? "🛵" : "🍽"} {serviceShort(service)}
+            </p>
+          )}
         </div>
         <div className="ornament my-3 text-xs">◆</div>
         <ul className="space-y-1 text-sm text-ivory">

@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { OrderRecord } from "./auth/store";
+import { serviceShort } from "./service";
 
 export interface InvoiceData {
   business: { name: string; tagline: string; address?: string; taxId?: string };
@@ -9,6 +10,8 @@ export interface InvoiceData {
   customer: { name: string; email: string };
   lines: { name: string; qty: number; unit: number; amount: number }[];
   total: number;
+  /** "Delivery" or "Dine in · booking BK-…" */
+  service: string;
   /** Present when the order was cancelled: the invoice is stamped CANCELLED and shows the refund. */
   cancelled?: { date: string; refundAmount: number; refundRef: string };
 }
@@ -44,6 +47,7 @@ export function buildInvoiceData(
     customer: { name: user.name, email: user.email },
     lines,
     total: lines.reduce((n, l) => n + l.amount, 0),
+    service: serviceShort(order.service ?? { type: "delivery" }),
     cancelled: order.cancelledAt
       ? { date: formatInvoiceDate(order.cancelledAt), refundAmount: order.refund?.amount ?? order.total, refundRef: order.refund?.ref ?? "" }
       : undefined,
@@ -102,6 +106,8 @@ export async function renderInvoicePdf(d: InvoiceData): Promise<Uint8Array> {
   text("BILLED TO", M, 690, 8, bold, gold);
   text(d.customer.name, M, 674, 12, bold);
   text(d.customer.email, M, 659, 10, sans, muted);
+  right("ORDER TYPE", M + W, 690, 8, bold, gold);
+  right(d.service, M + W, 674, 12, bold);
 
   // Table
   const colQty = M + W - 190;

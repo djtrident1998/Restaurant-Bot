@@ -1,5 +1,6 @@
 // In-memory per-session cart store (demo scale; resets on cold start).
 import { getItem } from "./menu";
+import { DEFAULT_SERVICE, type Service } from "./service";
 
 export interface CartLine {
   itemId: string;
@@ -19,9 +20,12 @@ export interface Order {
   id: string;
   placedAt: number;
   cart: CartView;
+  /** Delivery or dining, as selected when the order was placed. */
+  service: Service;
 }
 
 interface Session {
+  service: Service; // delivery (default) or dine-in; changing it after a read-back voids the confirmation
   qty: Map<string, number>;
   orders: Order[];
   version: number; // bumps on every cart change
@@ -37,7 +41,7 @@ const sessions = (g.__spiceSessions ??= new Map<string, Session>());
 function session(id: string): Session {
   let s = sessions.get(id);
   if (!s) {
-    s = { qty: new Map(), orders: [], version: 0, readBackVersion: -1, confirmedVersion: -1, turn: 0, readBackTurn: -1 };
+    s = { service: { ...DEFAULT_SERVICE }, qty: new Map(), orders: [], version: 0, readBackVersion: -1, confirmedVersion: -1, turn: 0, readBackTurn: -1 };
     sessions.set(id, s);
   }
   return s;
@@ -62,6 +66,21 @@ export function viewCart(sessionId: string): CartView {
 export function addLine(sessionId: string, itemId: string, qty: number): void {
   const s = session(sessionId);
   s.qty.set(itemId, (s.qty.get(itemId) ?? 0) + qty);
+  s.version++;
+}
+
+export function getService(sessionId: string): Service {
+  return { ...session(sessionId).service };
+}
+
+/**
+ * Set delivery / dining for this session. Idempotent: the browser sends its selection with every message, and only a
+ * REAL change bumps the cart version (which voids an earlier read-back / button confirmation).
+ */
+export function setService(sessionId: string, next: Service): void {
+  const s = session(sessionId);
+  if (s.service.type === next.type && s.service.bookingId === next.bookingId) return;
+  s.service = { ...next };
   s.version++;
 }
 
@@ -122,6 +141,7 @@ export function checkout(sessionId: string): Order {
     id: `SR-${Math.floor(1000 + Math.random() * 9000)}`,
     placedAt: Date.now(),
     cart: viewCart(sessionId),
+    service: { ...s.service },
   };
   s.orders.push(order);
   s.qty.clear();
@@ -138,6 +158,7 @@ export function findOrder(sessionId: string, orderId: string): Order | undefined
 }
 
 export interface SessionSnapshot {
+  service: Service;
   qty: [string, number][];
   orders: Order[];
   version: number;
@@ -150,6 +171,7 @@ export interface SessionSnapshot {
 export function snapshotSession(sessionId: string): SessionSnapshot {
   const s = session(sessionId);
   return {
+    service: { ...s.service },
     qty: [...s.qty],
     orders: [...s.orders],
     version: s.version,
@@ -161,6 +183,7 @@ export function snapshotSession(sessionId: string): SessionSnapshot {
 
 export function restoreSession(sessionId: string, snap: SessionSnapshot): void {
   const s = session(sessionId);
+  s.service = { ...snap.service };
   s.qty = new Map(snap.qty);
   s.orders = [...snap.orders];
   s.version = snap.version;

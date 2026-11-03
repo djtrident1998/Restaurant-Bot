@@ -46,6 +46,8 @@ The guarantees that matter are enforced in code, not by the score (section 5).
 - Voice input (microphone) and spoken/typed commands such as "place order"
 - Feedback and 1–5 star ratings after an order
 - PDF invoices
+- **Delivery or Dining, first:** a switch at the very top of the landing page (and step one of the ordering screen); each mode changes the screen. Delivery = the existing AI-waiter ordering. Dining = "Find a table" search, table booking, and dine-in ordering tied to a booking
+- **Table booking:** live availability (date, party 1–8, lunch/dinner seatings), table assigned by code atomically on shared storage, free cancellation until 2 hours before, 15-minute late hold, notes, calendar file, bookings list, pre-order link. Account deletion frees tables and scrubs names
 - **Allergen Shield:** a saved food profile (vegetarian only; avoid nuts, dairy, gluten, fish, egg) flags every dish, warns when a conflicting dish is added, and instructs the AI — enforced in code
 - **Your data, your control:** privacy policy, terms, consent at sign-up, data export and password-confirmed account deletion
 - **Cart editing:** +/− and remove on every line; instant add feedback

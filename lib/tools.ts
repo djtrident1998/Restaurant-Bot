@@ -96,7 +96,7 @@ export function placeOrderTool(sessionId: string, raw: unknown, opts: { signedIn
   if (!isUserConfirmed(sessionId))
     return err("Order NOT placed: the customer has not pressed the 'Yes, place order' button for the current cart. Read the cart back with get_cart, state the exact total, ask 'Shall I place this order?', and tell them to tap the 'Yes, place order' button (typing yes is not enough). Then END your reply.");
   const order = checkout(sessionId);
-  return { ok: true as const, orderId: order.id, status: "Received", cart: order.cart };
+  return { ok: true as const, orderId: order.id, status: "Received", cart: order.cart, service: order.service };
 }
 
 export function orderStatusTool(sessionId: string, raw: unknown) {
@@ -105,7 +105,9 @@ export function orderStatusTool(sessionId: string, raw: unknown) {
   const order = findOrder(sessionId, p.data.orderId);
   if (!order) return err(`No order found with id '${p.data.orderId}'.`);
   const mins = (Date.now() - order.placedAt) / 60000;
-  const status = mins < 2 ? "Received" : mins < 15 ? "Preparing" : mins < 30 ? "Out for delivery" : "Delivered";
+  // Demo status derived from elapsed time; the wording depends on how the order is being enjoyed.
+  const dineIn = order.service?.type === "dine-in";
+  const status = mins < 2 ? "Received" : mins < 15 ? "Preparing" : mins < 30 ? (dineIn ? "Ready to serve" : "Out for delivery") : dineIn ? "Served" : "Delivered";
   return { ok: true as const, orderId: order.id, status, total: order.cart.total, note: "Demo status derived from elapsed time." };
 }
 

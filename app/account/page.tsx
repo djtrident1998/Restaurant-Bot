@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BookingsList } from "@/components/BookingsList";
 import { CancelOrder } from "@/components/CancelOrder";
+import { serviceShort } from "@/lib/service";
 import { Credit } from "@/components/Credit";
 import { DataControls } from "@/components/DataControls";
 import { ProfileCard } from "@/components/ProfileCard";
@@ -44,6 +46,18 @@ export default async function AccountPage() {
 
         <ProfileCard initial={current.profile} />
 
+        <section id="bookings" className="mt-10 scroll-mt-24" aria-labelledby="bookings-heading">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="bookings-heading" className="font-display text-2xl text-ivory">
+              Your table bookings
+            </h2>
+            <Link href="/book" className="btn-ghost px-4 py-2 text-sm font-semibold">
+              Book a table
+            </Link>
+          </div>
+          <BookingsList bookings={account.bookings} />
+        </section>
+
         <h2 className="font-display mt-10 text-2xl text-ivory">Past orders</h2>
         {orders.length === 0 ? (
           <div className="card mt-4 p-6 text-muted">
@@ -58,7 +72,10 @@ export default async function AccountPage() {
             {orders.map((o) => (
               <li key={o.id} className="card p-5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-mono text-sm text-ivory">{o.id}</span>
+                  <span className="text-sm">
+                    <span className="font-mono text-ivory">{o.id}</span>
+                    <span className="ml-2 rounded-full bg-panel2 px-2 py-0.5 text-xs font-semibold text-muted">{serviceShort(o.service ?? { type: "delivery" })}</span>
+                  </span>
                   <time className="text-xs text-muted" dateTime={new Date(o.placedAt).toISOString()}>
                     {new Date(o.placedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                   </time>

@@ -20,6 +20,12 @@ export default function PrivacyPage() {
             <strong>Your orders:</strong> the dishes, quantities, totals and times of orders you place, any cancellation or refund entry, how you split a bill (names you typed and who has paid), and ratings or comments you leave.
           </li>
           <li>
+            <strong>Your table bookings:</strong> the date, time, party size, table, any note you typed and your name. Bookings are kept in a shared daily file so we can tell which tables are free; other customers never see them. Booking notes should not contain medical details.
+          </li>
+          <li>
+            <strong>Delivery or dining:</strong> whether each order was for delivery or dining, and which of your bookings it was linked to. No delivery address is collected by this demo.
+          </li>
+          <li>
             <strong>Your shopping cart and session:</strong> kept temporarily in server memory while you order. It is not a permanent record and can reset at any time.
           </li>
           <li>
@@ -75,7 +81,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Keeping it, and your rights</h2>
         <p>
-          We keep your account until you delete it. From your <a href="/account">Account page</a> you can <strong>download a copy of your data</strong> (JSON) and <strong>permanently delete your account</strong> with your password. Deletion removes your profile, order history, ratings and splits. Short-lived technical logs expire on their own. If you are in the EU/UK or India you also have the right to correct your data and to complain to your regulator; for anything else, <a href={CONTACT_URL}>contact us</a>.
+          We keep your account until you delete it. From your <a href="/account">Account page</a> you can <strong>download a copy of your data</strong> (JSON) and <strong>permanently delete your account</strong> with your password. Deletion removes your profile, order history, ratings and splits, frees any tables you had booked, and erases your name and notes from the shared booking records. Short-lived technical logs expire on their own. If you are in the EU/UK or India you also have the right to correct your data and to complain to your regulator; for anything else, <a href={CONTACT_URL}>contact us</a>.
         </p>
       </section>
 

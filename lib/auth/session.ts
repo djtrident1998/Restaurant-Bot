@@ -4,6 +4,7 @@ import { createToken, getSessionSecret, SESSION_DAYS, verifyToken } from "./toke
 import { getStore, type OrderRecord, type UserStore } from "./store";
 import { NAME_COOKIE } from "./nameCookie";
 import { normalizeProfile, type Profile } from "../profile";
+import type { BookingRef } from "../booking";
 
 export const SESSION_COOKIE = "sr_session";
 
@@ -32,6 +33,7 @@ export async function endSession(): Promise<void> {
 export interface Account {
   user: CurrentUser;
   orders: OrderRecord[];
+  bookings: BookingRef[];
 }
 
 /**
@@ -45,7 +47,7 @@ export async function resolveAccount(token: string | undefined, secret: string, 
   try {
     const u = await store.findById(payload.uid);
     if (!u) return null;
-    return { user: { id: u.id, name: u.name, email: u.email, profile: normalizeProfile(u.profile) }, orders: u.orders ?? [] };
+    return { user: { id: u.id, name: u.name, email: u.email, profile: normalizeProfile(u.profile) }, orders: u.orders ?? [], bookings: u.bookings ?? [] };
   } catch (e) {
     console.error("[session] could not load account", String(e).slice(0, 160));
     return null;

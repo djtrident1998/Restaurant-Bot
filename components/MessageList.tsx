@@ -5,6 +5,7 @@ import { CancelOrder } from "./CancelOrder";
 import { OrderConfirm } from "./OrderConfirm";
 import type { CartViewData } from "./CartPanel";
 import type { Profile } from "@/lib/profile";
+import type { Service } from "@/lib/service";
 
 function inline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((s, i) =>
@@ -76,7 +77,7 @@ export function MessageList({ messages, busy, onAdd, profile }: Props) {
               }
               if (isToolUIPart(p) && p.state === "output-available") {
                 const name = getToolName(p);
-                const out = p.output as { ok?: boolean; items?: MenuCardItem[]; orderId?: string; cart?: CartViewData } | undefined;
+                const out = p.output as { ok?: boolean; items?: MenuCardItem[]; orderId?: string; cart?: CartViewData; service?: Service } | undefined;
                 if (name === "search_menu" && out?.ok && out.items?.length) {
                   const heading = (p.input as { filters?: { category?: string } } | undefined)?.filters?.category;
                   return (
@@ -93,7 +94,7 @@ export function MessageList({ messages, busy, onAdd, profile }: Props) {
                   );
                 }
                 if (name === "place_order" && out?.ok && out.orderId && out.cart) {
-                  return <OrderConfirm key={i} orderId={out.orderId} cart={out.cart} />;
+                  return <OrderConfirm key={i} orderId={out.orderId} cart={out.cart} service={out.service} />;
                 }
                 if (name === "cancel_offer" && out?.ok && out.orderId) {
                   const o = out as { orderId: string; total: number; minutesLeft: number };

@@ -2,7 +2,9 @@
 // Same guarded tool functions as the model uses, so totals and the confirm-button rule are unchanged — but these
 // steps are instant, cost no AI quota and keep working when every AI provider is rate-limited.
 import { MENU } from "./menu";
-import { lineQty, removeLine, viewCart } from "./cart";
+import { getService, lineQty, removeLine, viewCart } from "./cart";
+import { serviceLabel } from "./service";
+import type { BookingRef } from "./booking";
 import { addToCartTool, getCartTool, placeOrderTool } from "./tools";
 import { CHECKOUT_TEXT, CONFIRM_TEXT, SIGN_IN_TEXT } from "./chatMessages";
 import { addWarning, dishFit, type Profile } from "./profile";
@@ -47,6 +49,7 @@ export function handleOrderIntent(
   intent: NonNullable<OrderIntent>,
   signedIn = false,
   profile?: Profile,
+  bookings?: BookingRef[],
 ): { text: string; outputs: StaticOutput[] } {
   // Browsing and filling a cart is open to everyone; checking out requires an account.
   if (!signedIn && (intent.type === "checkout" || intent.type === "confirm")) {
@@ -80,7 +83,7 @@ export function handleOrderIntent(
     const r = getCartTool(sessionId); // marks the cart as read back
     if (!r.ok || r.cart.lines.length === 0) return { text: "Your order is empty. Choose a course and add a dish to begin.", outputs: [] };
     return {
-      text: `Here is your order:\n\n${bullets(r.cart)}\n\n**Total: ₹${r.cart.total}**\n\nShall I place this order? Please tap the “Yes, place order” button to confirm.`,
+      text: `Here is your order:\n\n${bullets(r.cart)}\n\n**Total: ₹${r.cart.total}**\n\n**${serviceLabel(getService(sessionId), bookings)}**\n\nShall I place this order? Please tap the “Yes, place order” button to confirm.`,
       outputs: [],
     };
   }

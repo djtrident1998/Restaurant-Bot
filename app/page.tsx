@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Credit } from "@/components/Credit";
+import { HeroChoice } from "@/components/HeroChoice";
 import { LandingHeader } from "@/components/LandingHeader";
 import { COPPER_PHOTO, FEAST_PHOTO, HERO_PHOTO, TANDOOR_PHOTO, photoUrl } from "@/lib/images";
 import { getItem } from "@/lib/menu";
@@ -52,7 +53,7 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.4)_0%,transparent_55%,rgba(0,0,0,0.55)_100%)]" />
         <LandingHeader />
 
-        <div id="main" tabIndex={-1} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-32 text-center outline-none">
+        <div id="main" tabIndex={-1} className="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-5 pb-24 pt-28 text-center outline-none">
           <p className="fade-up inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white backdrop-blur sm:text-sm">
             North Indian Fine Dining
           </p>
@@ -62,14 +63,8 @@ export default function Home() {
           <p className="fade-up mt-6 max-w-xl text-lg leading-relaxed text-ivory/90 [animation-delay:260ms] sm:text-xl">
             An evening along the old spice road — saffron, smoke and slow-cooked tradition, served by a waiter who knows every dish.
           </p>
-          <div className="fade-up mt-10 flex flex-col items-center gap-3 [animation-delay:400ms] sm:flex-row">
-            <Link href="/order" className="btn-gold px-9 py-3.5 text-base">
-              Order with our AI waiter
-            </Link>
-            <Link href="#signature" className="btn-ghost bg-white/10 px-9 py-3.5 text-base text-white backdrop-blur">
-              Discover the menu
-            </Link>
-          </div>
+          {/* Step one, right at the start: Delivery or Dining. Delivery keeps the original "Order with our AI waiter" / "Discover the menu". */}
+          <HeroChoice />
         </div>
 
         <a href="#categories" aria-label="Scroll to learn more" className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 transition hover:text-white">
@@ -195,6 +190,9 @@ export default function Home() {
             </Link>
             <Link href="/terms" className="py-2 text-gold-soft hover:underline">
               Terms
+            </Link>
+            <Link href="/book" className="py-2 text-gold-soft hover:underline">
+              Book a table
             </Link>
             <Link href="/about" className="py-2 text-gold-soft hover:underline">
               About
