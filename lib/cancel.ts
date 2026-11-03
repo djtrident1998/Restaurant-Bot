@@ -84,7 +84,7 @@ export async function handleCancelIntent(
   if (!e.ok) return { text: `Order **${order.id}**: ${e.message}`, outputs: [] };
   const minutesLeft = Math.max(1, Math.ceil(e.msLeft / 60_000));
   return {
-    text: `Order **${order.id}** (₹${order.total}) can still be cancelled — about ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left. Cancelling refunds the **full ₹${order.total}**. Tap the button below to confirm.`,
+    text: `Order **${order.id}** (₹${order.total}) can still be cancelled — about ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left. Cancelling refunds the **full ₹${order.total}**. Tap the button below, or say "yes", to confirm.`,
     outputs: [{ toolName: "cancel_offer", input: { orderId: order.id }, output: { ok: true, orderId: order.id, total: order.total, minutesLeft } }],
   };
 }
@@ -92,13 +92,16 @@ export async function handleCancelIntent(
 // ---- chat: "cancel my order", "cancel order SR-1234", "I want a refund" ----
 
 const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9' -]/g, " ").replace(/\s+/g, " ").trim();
-const CANCEL_RE = /^(?:(?:please|can you|could you|i want to|i'd like to|i would like to|i need to|i wanna)\s+)*(?:cancel|refund)(?: (?:my|the|this|that|last|latest|recent|previous))* (?:order(?: (sr-\d{4}))?|(sr-\d{4}))(?: (?:please|now))?$/;
+const CANCEL_RE = /^(?:(?:please|can you|could you|i want to|i'd like to|i would like to|i need to|i wanna|ok|okay)\s+)*(?:cancel|refund)(?: (?:my|the|this|that|last|latest|recent|previous|food|whole|delivery|current))* (?:order(?: (sr-\d{4}))?|(sr-\d{4}))(?: (?:i (?:just )?(?:placed|made|ordered)|just placed|please|now))*$/;
+// Right after an order was placed (or its cancel button was shown), a bare "cancel it" / "cancel" means that order.
+const BARE_CANCEL_RE = /^(?:(?:please|ok|okay|so|hey)\s+)*(?:(?:i (?:want|need|would like|wanna) to|i'd like to|let's|can you|could you)\s+)?(?:cancel|undo)(?: (?:it|that|this|the order|my order|that order))?(?: please)?$/;
 const REFUND_RE = /^(?:i (?:want|need) (?:a )?refund|refund me|get (?:a )?refund|(?:i want to|i'd like to) (?:get|have) (?:my money back|a refund))(?: (?:for|of) (?:my |the )?(?:order )?(sr-\d{4}))?$/;
 
 /** Recognises a cancel / refund request. Strict, whole-message matching so ordinary questions never trigger it. */
-export function detectCancelIntent(text: string): { orderId?: string } | null {
+export function detectCancelIntent(text: string, justOrdered = false): { orderId?: string } | null {
   const t = norm(text);
   if (!t || t.length > 80) return null;
+  if (justOrdered && BARE_CANCEL_RE.test(t)) return {};
   const m = t.match(CANCEL_RE) ?? t.match(REFUND_RE);
   if (!m) return null;
   const id = m[1] ?? m[2];

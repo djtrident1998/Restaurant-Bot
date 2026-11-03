@@ -117,6 +117,8 @@ export function parsePartyWords(rest: string, bare = false): number | undefined 
 const CANCEL_WORD = /\b(cancel|delete|remove|undo|drop)\b/;
 const BOOKING_NOUN = /\b(bookings?|reservations?|tables?|seats?)\b/;
 
+const BARE_CANCEL = /^(?:(?:please|ok|okay|so|hey)\s+)*(?:(?:i (?:want|need|would like|wanna) to|i'd like to|let's|can you|could you)\s+)?(?:cancel|undo|delete|remove)(?: (?:it|that|this|the booking|my booking|that booking|the table|my table|the one i just made))?(?: please)?$/;
+
 export const isCancelBookingTalk = (text: string): boolean => {
   const t = norm(text);
   return !!t && t.length <= 200 && CANCEL_WORD.test(t) && BOOKING_NOUN.test(t) && !/\border\b/.test(t);
@@ -145,10 +147,13 @@ function fieldsOf(text: string, today: string, bare: boolean): BookingFields {
  * Work out what the customer wants from their recent messages (oldest first). `asked` says the waiter's previous message was
  * a "which day / how many people" question or a "which booking" question, so a short answer ("4 people tomorrow at 8") counts.
  */
-export function resolveBookingRequest(userTexts: string[], asked: BookingAsk, today = todayLocal()): BookingRequest | null {
+export function resolveBookingRequest(userTexts: string[], asked: BookingAsk, today = todayLocal(), justBooking = false): BookingRequest | null {
   const texts = userTexts.slice(-6);
   const last = texts.at(-1) ?? "";
   if (!last) return null;
+
+  // Right after a booking was offered or made, a bare "cancel it" / "cancel that" means that booking.
+  if (justBooking && BARE_CANCEL.test(norm(last))) return { kind: "cancel" };
 
   if (isCancelBookingTalk(last) || asked === "cancel") {
     const f = fieldsOf(last, today, false);
@@ -186,6 +191,7 @@ export function interpretBookingReply(text: string, kind: "book" | "cancel"): "y
   const t = norm(text).replace(/^(?:(?:ok|okay|alright|so|hey|please|and)\s+)+/, "").replace(/\s+(?:please|now|thanks|thank you)$/, "").trim();
   if (!t || t.length > 40) return null;
   if (NO_BOOKING.test(t)) return "no";
+  if (kind === "book" && /^(?:cancel|cancel (?:it|that|this)|forget it|skip it)$/.test(t)) return "no"; // "cancel" on an unconfirmed offer just drops the offer
   return (kind === "book" ? YES_BOOKING : YES_CANCEL).test(t) ? "yes" : null;
 }
 

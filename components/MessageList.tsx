@@ -114,7 +114,7 @@ export function MessageList({ messages, busy, onAdd, onSend, profile }: Props) {
                 }
                 if (name === "cancel_offer" && out?.ok && out.orderId) {
                   const o = out as { orderId: string; total: number; minutesLeft: number };
-                  return <CancelOrder key={i} orderId={o.orderId} total={o.total} minutesLeft={o.minutesLeft} />;
+                  return <CancelOrder key={i} orderId={o.orderId} total={o.total} minutesLeft={o.minutesLeft} callKey={p.toolCallId} />;
                 }
               }
               return null;

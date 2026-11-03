@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { BOOKING_CONFIRM_EVENT, BOOKING_DISMISS_EVENT, BOOKING_SETTLED_EVENT } from "./BookingChatCards";
 
 interface Refund {
   amount: number;
@@ -12,14 +13,34 @@ interface Refund {
  * Cancel an order and get a full refund. Two taps (Cancel -> Yes, cancel) so it can't happen by accident; the server
  * decides whether the order is still cancellable. `minutesLeft` is only a hint for the label.
  */
-export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false }: { orderId: string; total: number; minutesLeft?: number; refreshAfter?: boolean }) {
+export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false, callKey }: { orderId: string; total: number; minutesLeft?: number; refreshAfter?: boolean; callKey?: string }) {
   const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [refund, setRefund] = useState<Refund | null>(null);
+  const inFlight = useRef(false);
+  const latest = useRef<{ cancel: () => void; keep: () => void }>({ cancel: () => undefined, keep: () => undefined });
+
+  // In the chat, a spoken or typed "yes" / "no" presses these same buttons (the chat says which card is waiting).
+  useEffect(() => {
+    if (!callKey) return;
+    const on = (which: "cancel" | "keep") => (e: Event) => {
+      if ((e as CustomEvent<{ key: string }>).detail?.key === callKey) latest.current[which]();
+    };
+    const c = on("cancel");
+    const k = on("keep");
+    window.addEventListener(BOOKING_CONFIRM_EVENT, c);
+    window.addEventListener(BOOKING_DISMISS_EVENT, k);
+    return () => {
+      window.removeEventListener(BOOKING_CONFIRM_EVENT, c);
+      window.removeEventListener(BOOKING_DISMISS_EVENT, k);
+    };
+  }, [callKey]);
 
   async function cancel() {
+    if (inFlight.current || refund) return;
+    inFlight.current = true;
     setBusy(true);
     setError("");
     try {
@@ -34,14 +55,27 @@ export function CancelOrder({ orderId, total, minutesLeft, refreshAfter = false 
         setAsking(false);
       } else {
         setRefund(j.refund);
+        if (callKey) window.dispatchEvent(new CustomEvent(BOOKING_SETTLED_EVENT, { detail: { key: callKey } }));
         if (refreshAfter) router.refresh();
       }
     } catch {
       setError("Network problem. Please try again.");
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
+  useEffect(() => {
+    // Keep the voice handlers pointing at this render's state.
+    latest.current = {
+      cancel,
+      keep: () => {
+        if (inFlight.current || refund) return;
+        setAsking(false);
+        if (callKey) window.dispatchEvent(new CustomEvent(BOOKING_SETTLED_EVENT, { detail: { key: callKey } }));
+      },
+    };
+  });
 
   if (refund) {
     return (

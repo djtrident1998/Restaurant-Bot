@@ -59,6 +59,18 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   check("cancel can name a day or a time", cd?.kind === "cancel" && cd.date === "2026-11-04" && (R(["cancel the 8 pm booking"]) as { time?: string }).time === "20:00");
   check("an answer to 'which booking' picks one", (R(["cancel my booking", "the one on saturday"], "cancel") as { date?: string }).date === "2026-11-07");
 
+  // right after a booking was offered or made, a bare "cancel it" means that booking
+  const justCancel = ["cancel it", "cancel", "cancel that", "please cancel this booking", "I want to cancel it", "undo"].every((s) => resolveBookingRequest([s], null, TODAY, true)?.kind === "cancel");
+  check("'cancel it' / 'cancel' right after a booking cancels that booking", justCancel);
+  check("without a booking just made, a bare 'cancel it' is left alone (it could mean an order)", resolveBookingRequest(["cancel it"], null, TODAY, false) === null && resolveBookingRequest(["cancel"], null, TODAY, false) === null);
+  check("'cancel' on an unconfirmed offer drops the offer, it doesn't cancel anything", interpretBookingReply("cancel", "book") === "no" && interpretBookingReply("cancel it", "book") === "no" && interpretBookingReply("forget it", "book") === "no");
+
+  // ---------- cancelling a food order by chat or voice ----------
+  check("order cancel phrasings: food order / the one I just placed", ["cancel my food order", "cancel the order I just placed", "please cancel my order", "I want to cancel my last order", "cancel order SR-1234"].every((s) => detectCancelIntent(s) !== null));
+  check("a bare 'cancel it' cancels the order only right after one was placed", detectCancelIntent("cancel it", true) !== null && detectCancelIntent("cancel", true) !== null && detectCancelIntent("I want to cancel it", true) !== null && detectCancelIntent("cancel it") === null && detectCancelIntent("cancel") === null);
+  check("order cancel never fires on dish or chatter", ["do you have a cancel policy", "is the order spicy", "cancel culture"].every((s) => detectCancelIntent(s, true) === null));
+  check("'cancel my order' is not a booking request", resolveBookingRequest(["cancel my order"], null, TODAY, false) === null && resolveBookingRequest(["cancel my food order"], null, TODAY, false) === null);
+
   // ---------- no clash with ordering, menu or order cancelling ----------
   const others = ["Show me the menu", "Add 2 Butter Chicken to my cart", "I'd like to place my order", "cancel my order", "cancel order SR-1234", "I want a refund", "Yes, place the order", "what's the spiciest dish?", "do you have a table cloth?"];
   check("menu, cart, order and refund messages are not booking requests", others.slice(0, 8).every((s) => R([s]) === null && !looksLikeBookingTalk(s)));
@@ -70,7 +82,7 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   check("yes / book it confirm a booking offer", ["yes", "Yes, please", "yeah", "go ahead", "confirm", "book it", "yes book it"].every((s) => interpretBookingReply(s, "book") === "yes"));
   check("no / not now / keep it decline", ["no", "no thanks", "not now", "never mind", "keep it"].every((s) => interpretBookingReply(s, "book") === "no"));
   check("casual 'okay' / 'sure' / chatter never confirm a booking", ["okay", "sure", "sounds good", "hmm", "what time is it", "maybe"].every((s) => interpretBookingReply(s, "book") === null && interpretBookingReply(s, "cancel") === null));
-  check("'cancel it' confirms a cancel offer but not a booking offer", interpretBookingReply("cancel it", "cancel") === "yes" && interpretBookingReply("cancel it", "book") === null && interpretBookingReply("don't cancel", "cancel") === "no");
+  check("'cancel it' confirms a cancel offer but never a booking offer", interpretBookingReply("cancel it", "cancel") === "yes" && interpretBookingReply("cancel it", "book") !== "yes" && interpretBookingReply("don't cancel", "cancel") === "no");
   check("the waiter's questions are recognised on the next turn", askedFrom("Sure. To book your table, I just need how many people") === "book" && askedFrom("Which booking would you like to cancel? Tap one below.") === "cancel" && askedFrom("Hello") === null);
 
   // ---------- the replies (nothing is booked until the customer confirms) ----------

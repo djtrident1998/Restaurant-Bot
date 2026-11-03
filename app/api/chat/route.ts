@@ -1,4 +1,4 @@
-import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, getToolName, isToolUIPart, streamText, type UIMessage } from "ai";
 import { agentConfig } from "@/lib/agent";
 import { buildTools } from "@/lib/tools";
 import { streamWithFailover } from "@/lib/failover";
@@ -99,7 +99,9 @@ export async function POST(req: Request) {
   const userTexts = messages.filter((m) => m.role === "user").map(textOf);
   const lastUserAt = messages.lastIndexOf(lastUser as UIMessage);
   const prevAssistant = messages.slice(0, Math.max(lastUserAt, 0)).reverse().find((m) => m.role === "assistant");
-  const bookingReq = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal());
+  // The waiter's last message offered (or just made) a booking: then "cancel it" means that booking.
+  const justBooking = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && getToolName(p) === "booking_offer");
+  const bookingReq = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal(), justBooking);
   if (bookingReq) {
     if (!checkWindow(`chatbook:${ip}`, 40, 10 * 60_000)) return staticReply("You're asking about tables very quickly. Please wait a few minutes and try again, or use the Book a table page.");
     const r = await handleBookingRequest({ bookings: getBookingStore(), users: getStore() }, (await getCurrentUser()) ?? undefined, bookingReq);
@@ -138,7 +140,9 @@ export async function POST(req: Request) {
   }
 
   // Cancel / refund requests are answered by code too (never by the AI): explain the rule and offer a confirm button.
-  const cancelIntent = detectCancelIntent(userText);
+  // (Right after an order was placed or its cancel button was shown, a bare "cancel it" means that order.)
+  const justOrdered = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && ["place_order", "cancel_offer"].includes(getToolName(p)));
+  const cancelIntent = detectCancelIntent(userText, justOrdered);
   if (cancelIntent) {
     const r = await handleCancelIntent(getStore(), user?.id, cancelIntent);
     return staticReply(r.text, r.outputs);

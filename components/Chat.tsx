@@ -231,11 +231,11 @@ export function Chat({
   // A booking or cancel offer waiting for the customer (the latest card in the last waiter message, not yet settled).
   const pendingBooking = useMemo(() => {
     if (!last || last.role !== "assistant" || busy) return null;
-    const cards = last.parts.filter(isToolUIPart).filter((p) => p.state === "output-available" && ["booking_offer", "booking_cancel_offer"].includes(getToolName(p)));
+    const cards = last.parts.filter(isToolUIPart).filter((p) => p.state === "output-available" && ["booking_offer", "booking_cancel_offer", "cancel_offer"].includes(getToolName(p)));
     if (cards.length === 0) return null;
     const first = cards[0];
     const kind = getToolName(first) === "booking_offer" ? ("book" as const) : ("cancel" as const);
-    if (kind === "cancel" && cards.length > 1) return null; // several bookings on offer: the customer taps the one they mean
+    if (kind === "cancel" && cards.length > 1) return null; // several bookings on offer: the customer taps the one they mean (an order cancel offer is always a single card)
     return settled.has(first.toolCallId) ? null : { key: first.toolCallId, kind };
   }, [last, busy, settled]);
 
