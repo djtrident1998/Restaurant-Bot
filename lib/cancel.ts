@@ -61,8 +61,8 @@ export async function cancelOrder(store: UserStore, userId: string, rawOrderId: 
 }
 
 /**
- * Chat reply to a cancel request. Never cancels by itself: it explains the rule and, when the order is still
- * cancellable, offers a button (the same two-tap flow as the account page). No AI call, no tokens.
+ * Chat reply to a cancel request ("cancel my order", typed or spoken). Cancels the customer's own order straight away when it
+ * is still inside the window, otherwise explains why not. No AI call, no tokens.
  */
 export async function handleCancelIntent(
   store: UserStore,
@@ -73,7 +73,9 @@ export async function handleCancelIntent(
 ): Promise<{ text: string; outputs: { toolName: string; input: unknown; output: unknown }[] }> {
   if (!userId) return { text: "Please sign in first — cancellations and refunds are for your account's orders.", outputs: [] };
   const orders = (await store.findById(userId))?.orders ?? [];
-  const order = intent.orderId ? orders.find((o) => o.id.toUpperCase() === intent.orderId) : [...orders].sort((a, b) => b.placedAt - a.placedAt)[0];
+  const newest = [...orders].sort((a, b) => b.placedAt - a.placedAt);
+  // A named order, or the newest one that is still open (not already cancelled).
+  const order = intent.orderId ? orders.find((o) => o.id.toUpperCase() === intent.orderId) : (newest.find((o) => !o.cancelledAt) ?? newest[0]);
   if (!order) {
     return {
       text: intent.orderId ? `I couldn't find order **${intent.orderId}** on your account.` : "You haven't placed an order yet, so there is nothing to cancel.",
@@ -82,10 +84,13 @@ export async function handleCancelIntent(
   }
   const e = cancelEligibility(order, now, windowMs);
   if (!e.ok) return { text: `Order **${order.id}**: ${e.message}`, outputs: [] };
-  const minutesLeft = Math.max(1, Math.ceil(e.msLeft / 60_000));
+  // A clear request from the signed-in customer for their own order, inside the window: do it now (same atomic, one-refund
+  // rule as the cancel button). The AI is not involved and has no cancel tool.
+  const r = await cancelOrder(store, userId, order.id, now, windowMs);
+  if (!r.ok) return { text: r.error, outputs: [] };
   return {
-    text: `Order **${order.id}** (₹${order.total}) can still be cancelled — about ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} left. Cancelling refunds the **full ₹${order.total}**. Tap the button below, or say "yes", to confirm.`,
-    outputs: [{ toolName: "cancel_offer", input: { orderId: order.id }, output: { ok: true, orderId: order.id, total: order.total, minutesLeft } }],
+    text: `Done. Order **${order.id}** is cancelled and a full refund of **₹${r.refund.amount}** is recorded (ref ${r.refund.ref}).`,
+    outputs: [{ toolName: "order_cancelled", input: { orderId: order.id }, output: { ok: true, orderId: order.id, total: order.total, refund: r.refund } }],
   };
 }
 

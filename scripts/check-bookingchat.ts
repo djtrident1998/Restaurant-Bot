@@ -1,6 +1,6 @@
 // Offline test of booking and cancelling a table by chat or voice: reading the request, asking for what's missing, offering
 // slots, the confirm step, and that nothing is booked or cancelled until the customer confirms.
-import { askedFrom, bookRequestText, interpretBookingReply, isBookTalk, isCancelBookingTalk, looksLikeBookingTalk, parseDateWords, parseTimeWords, resolveBookingRequest } from "../lib/bookingIntent";
+import { askedFrom, bookRequestText, isBookTalk, isCancelBookingTalk, looksLikeBookingTalk, parseDateWords, parseTimeWords, resolveBookingRequest } from "../lib/bookingIntent";
 import { handleBookingRequest } from "../lib/bookingChat";
 import { createBooking } from "../lib/bookingService";
 import { __testing as bookingTesting } from "../lib/bookings/store";
@@ -63,8 +63,6 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   const justCancel = ["cancel it", "cancel", "cancel that", "please cancel this booking", "I want to cancel it", "undo"].every((s) => resolveBookingRequest([s], null, TODAY, true)?.kind === "cancel");
   check("'cancel it' / 'cancel' right after a booking cancels that booking", justCancel);
   check("without a booking just made, a bare 'cancel it' is left alone (it could mean an order)", resolveBookingRequest(["cancel it"], null, TODAY, false) === null && resolveBookingRequest(["cancel"], null, TODAY, false) === null);
-  check("'cancel' on an unconfirmed offer drops the offer, it doesn't cancel anything", interpretBookingReply("cancel", "book") === "no" && interpretBookingReply("cancel it", "book") === "no" && interpretBookingReply("forget it", "book") === "no");
-
   // ---------- cancelling a food order by chat or voice ----------
   check("order cancel phrasings: food order / the one I just placed", ["cancel my food order", "cancel the order I just placed", "please cancel my order", "I want to cancel my last order", "cancel order SR-1234"].every((s) => detectCancelIntent(s) !== null));
   check("a bare 'cancel it' cancels the order only right after one was placed", detectCancelIntent("cancel it", true) !== null && detectCancelIntent("cancel", true) !== null && detectCancelIntent("I want to cancel it", true) !== null && detectCancelIntent("cancel it") === null && detectCancelIntent("cancel") === null);
@@ -78,14 +76,9 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   check("booking words never trigger an order or menu action", [bookRequestText(4, "2026-11-07", "20:00"), "Book a table for 4 tomorrow at 8 pm", "cancel my booking"].every((s) => detectOrderIntent(s) === null && detectMenuIntent(s) === null));
   check("isBookTalk is strict about length and cancel words", !isBookTalk("book a table ".repeat(30)) && !isBookTalk("cancel my table booking"));
 
-  // ---------- saying yes or no ----------
-  check("yes / book it confirm a booking offer", ["yes", "Yes, please", "yeah", "go ahead", "confirm", "book it", "yes book it"].every((s) => interpretBookingReply(s, "book") === "yes"));
-  check("no / not now / keep it decline", ["no", "no thanks", "not now", "never mind", "keep it"].every((s) => interpretBookingReply(s, "book") === "no"));
-  check("casual 'okay' / 'sure' / chatter never confirm a booking", ["okay", "sure", "sounds good", "hmm", "what time is it", "maybe"].every((s) => interpretBookingReply(s, "book") === null && interpretBookingReply(s, "cancel") === null));
-  check("'cancel it' confirms a cancel offer but never a booking offer", interpretBookingReply("cancel it", "cancel") === "yes" && interpretBookingReply("cancel it", "book") !== "yes" && interpretBookingReply("don't cancel", "cancel") === "no");
-  check("the waiter's questions are recognised on the next turn", askedFrom("Sure. To book your table, I just need how many people") === "book" && askedFrom("Which booking would you like to cancel? Tap one below.") === "cancel" && askedFrom("Hello") === null);
+  check("the waiter's questions are recognised on the next turn", askedFrom("Sure. To book your table, I just need how many people") === "book" && askedFrom("Which booking would you like to cancel? Say its day or time") === "cancel" && askedFrom("Hello") === null);
 
-  // ---------- the replies (nothing is booked until the customer confirms) ----------
+  // ---------- the replies: a clear request is carried out straight away ----------
   const bookings = new bookingTesting.MemoryBookingStore();
   const users = new userTesting.MemoryStore();
   const mk = async (email: string, name: string): Promise<UserRecord> => {
@@ -97,69 +90,75 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   const ravi = await mk("ravi-bc@example.com", "Ravi");
   const deps = { bookings, users };
   const A = { id: asha.id, name: asha.name };
+  const RV = { id: ravi.id, name: ravi.name };
   const ask = (req: Parameters<typeof handleBookingRequest>[2], u: typeof A | null = A) => handleBookingRequest(deps, u ?? undefined, req, NOW);
+  const mine = async (date: string, uid = asha.id) => (await bookings.read(date)).filter((b) => b.userId === uid && b.status === "confirmed");
 
   const guest = await ask({ kind: "book", date: "2026-11-07", time: "20:00", party: 4 }, null);
-  check("a guest is asked to sign in (for booking and cancelling)", guest.text.includes(SIGN_IN_MARKER) && (await ask({ kind: "cancel" }, null)).text.includes(SIGN_IN_MARKER) && guest.outputs.length === 0);
+  check("a guest is asked to sign in (for booking and cancelling)", guest.text.includes(SIGN_IN_MARKER) && (await ask({ kind: "cancel" }, null)).text.includes(SIGN_IN_MARKER) && guest.outputs.length === 0 && (await mine("2026-11-07")).length === 0);
 
   const missing = await ask({ kind: "book" });
   check("missing details: it asks, and says what it needs", askedFrom(missing.text) === "book" && /how many people/.test(missing.text) && /which day/.test(missing.text) && /what time/.test(missing.text) && missing.outputs.length === 0);
   const noDay = await ask({ kind: "book", party: 4, time: "20:00" });
   check("only the missing parts are asked for", /which day/.test(noDay.text) && !/how many people/.test(noDay.text) && !/what time/.test(noDay.text));
 
-  const offer = await ask({ kind: "book", date: "2026-11-07", time: "20:00", party: 4 });
-  const offerOut = offer.outputs[0];
-  check("a free slot gives a confirm offer, not a booking", offerOut?.toolName === "booking_offer" && (offerOut.output as { time: string }).time === "20:00" && (await bookings.read("2026-11-07")).length === 0);
-  check("the offer wording leaves the decision to the customer", /confirm|yes/i.test(offer.text));
-
   const noTime = await ask({ kind: "book", date: "2026-11-07", party: 4 });
   const noTimeOut = noTime.outputs[0]?.output as { times: string[] } | undefined;
-  check("no time: free times are offered as buttons", noTime.outputs[0]?.toolName === "booking_slots" && !!noTimeOut && noTimeOut.times.length > 0 && noTimeOut.times.length <= 12 && noTimeOut.times.every((t) => /^\d\d:\d\d$/.test(t)));
+  check("no time: free times are offered as buttons (nothing booked yet)", noTime.outputs[0]?.toolName === "booking_slots" && !!noTimeOut && noTimeOut.times.length > 0 && noTimeOut.times.length <= 12 && (await mine("2026-11-07")).length === 0);
 
   const odd = await ask({ kind: "book", date: "2026-11-07", time: "20:15", party: 2 });
   const oddTimes = (odd.outputs[0]?.output as { times: string[] } | undefined)?.times ?? [];
-  check("a time that isn't a start time offers the closest ones", oddTimes.includes("20:00") && oddTimes.includes("20:30") && /isn't a start time/.test(odd.text));
+  check("a time that isn't a start time offers the closest ones (nothing booked)", oddTimes.includes("20:00") && oddTimes.includes("20:30") && /isn't a start time/.test(odd.text) && (await mine("2026-11-07")).length === 0);
 
   check("a party over 8 is sent to the phone", /1 to 8/.test((await ask({ kind: "book", date: "2026-11-07", time: "20:00", party: 12 })).text));
   check("a past or too-distant date is refused politely", /passed/.test((await ask({ kind: "book", date: "2026-11-01", time: "20:00", party: 2 })).text) && /30 days/.test((await ask({ kind: "book", date: "2027-03-01", time: "20:00", party: 2 })).text));
 
   // a full slot: another customer takes the one 8-seat table, then Asha asks for it
-  const taken = await createBooking(bookings, users, { id: ravi.id, name: ravi.name }, { date: "2026-11-09", time: "20:00", party: 8, notes: "" }, NOW);
+  const taken = await createBooking(bookings, users, RV, { date: "2026-11-09", time: "20:00", party: 8, notes: "" }, NOW);
   const fullSlot = await ask({ kind: "book", date: "2026-11-09", time: "20:00", party: 8 });
   const alt = (fullSlot.outputs[0]?.output as { times: string[] } | undefined)?.times ?? [];
-  check("a full slot says so and offers other free times (never the full one)", taken.ok && /full/i.test(fullSlot.text) && !alt.includes("20:00") && alt.length > 0, JSON.stringify(alt));
+  check("a full slot says so and offers other free times (never the full one)", taken.ok && /full/i.test(fullSlot.text) && !alt.includes("20:00") && alt.length > 0 && (await mine("2026-11-09")).length === 0, JSON.stringify(alt));
 
-  // the confirm step is the normal booking API
-  const booked = await createBooking(bookings, users, A, { date: "2026-11-07", time: "20:00", party: 4, notes: "" }, NOW);
-  check("confirming goes through the normal booking service", booked.ok && (await bookings.read("2026-11-07")).filter((b) => b.userId === asha.id).length === 1);
-  const clash = await createBooking(bookings, users, A, { date: "2026-11-07", time: "20:30", party: 2, notes: "" }, NOW);
-  check("and the service still refuses a clashing booking (the button can't bypass the rules)", !clash.ok);
+  // a complete request is booked straight away
+  const done = await ask({ kind: "book", date: "2026-11-07", time: "20:00", party: 4 });
+  const doneOut = done.outputs[0];
+  const doneBooking = (doneOut?.output as { booking?: { id: string; table: string; time: string } } | undefined)?.booking;
+  check("a complete request books the table straight away (no extra tap)", doneOut?.toolName === "booking_done" && !!doneBooking && doneBooking.time === "20:00" && (await mine("2026-11-07")).length === 1 && /Done/.test(done.text) && done.text.includes(doneBooking.id));
+  const stored = (await users.findById(asha.id))?.bookings ?? [];
+  check("the booking is also on the customer's account", stored.some((b) => b.id === doneBooking?.id && b.status === "confirmed"));
+  const clash = await ask({ kind: "book", date: "2026-11-07", time: "20:30", party: 2 });
+  check("the booking rules still apply: a clashing booking is refused with the reason", clash.outputs.length === 0 && /around that time/i.test(clash.text) && (await mine("2026-11-07")).length === 1);
 
   // cancelling
   const nothing = await ask({ kind: "cancel" }, { id: userIdFor("nobody-bc@example.com"), name: "Nobody" });
   check("cancel with nothing booked says so", /don't have an upcoming/.test(nothing.text) && nothing.outputs.length === 0);
   const one = await ask({ kind: "cancel" });
-  const oneOut = one.outputs[0]?.output as { booking: { id: string }; allowed: boolean } | undefined;
-  check("one upcoming booking: a single cancel offer (nothing cancelled yet)", one.outputs.length === 1 && one.outputs[0].toolName === "booking_cancel_offer" && oneOut?.allowed === true && (await bookings.read("2026-11-07")).some((b) => b.userId === asha.id && b.status === "confirmed"));
+  check("one upcoming booking: 'cancel my booking' cancels it straight away", one.outputs.length === 1 && one.outputs[0].toolName === "booking_cancelled" && (await mine("2026-11-07")).length === 0 && /Done/.test(one.text));
+  check("the account copy is cancelled too, so the table is free again", ((await users.findById(asha.id))?.bookings ?? []).every((b) => b.status === "cancelled") && (await ask({ kind: "book", date: "2026-11-07", time: "20:00", party: 4 })).outputs[0]?.toolName === "booking_done");
 
-  const second = await createBooking(bookings, users, A, { date: "2026-11-12", time: "13:00", party: 2, notes: "" }, NOW);
+  // two bookings: it asks which; naming the day cancels that one
+  const second = await ask({ kind: "book", date: "2026-11-12", time: "13:00", party: 2 });
   const two = await ask({ kind: "cancel" });
-  check("several bookings: it asks which one", second.ok && two.outputs.length === 2 && askedFrom(two.text) === "cancel");
+  check("several bookings: it asks which one and cancels nothing", second.outputs[0]?.toolName === "booking_done" && two.outputs.length === 2 && two.outputs.every((o) => o.toolName === "booking_cancel_offer") && askedFrom(two.text) === "cancel" && (await mine("2026-11-12")).length === 1 && (await mine("2026-11-07")).length === 1);
   const byDate = await ask({ kind: "cancel", date: "2026-11-12" });
-  check("naming the day picks the right booking", byDate.outputs.length === 1 && (byDate.outputs[0].output as { booking: { date: string } }).booking.date === "2026-11-12");
+  check("naming the day cancels the right booking", byDate.outputs[0]?.toolName === "booking_cancelled" && (await mine("2026-11-12")).length === 0 && (await mine("2026-11-07")).length === 1);
   check("an unknown day lists what you have", /couldn't find/.test((await ask({ kind: "cancel", date: "2026-11-20" })).text));
 
-  // inside the cancellation cut-off the offer is not allowed
-  const soon = await createBooking(bookings, users, { id: ravi.id, name: ravi.name }, { date: TODAY, time: "13:00", party: 2, notes: "" }, NOW);
-  const soonOffer = await ask({ kind: "cancel" }, { id: ravi.id, name: ravi.name });
-  const soonOut = soonOffer.outputs.find((o) => (o.output as { booking: { date: string } }).booking.date === TODAY)?.output as { allowed: boolean; message: string } | undefined;
-  check("a booking inside the 2-hour cut-off can't be cancelled by chat (call the restaurant)", soon.ok && !!soonOut && soonOut.allowed === false && /call|hours/i.test(soonOut.message));
+  // 'cancel it' right after a booking was made: the server hands over that booking's id
+  const justMade = (await ask({ kind: "book", date: "2026-11-13", time: "19:30", party: 2 })).outputs[0]?.output as { booking: { id: string } };
+  const cancelThat = await ask({ kind: "cancel", id: justMade.booking.id });
+  check("'cancel it' after a booking cancels exactly that one even when there are several", cancelThat.outputs[0]?.toolName === "booking_cancelled" && (await mine("2026-11-13")).length === 0 && (await mine("2026-11-07")).length === 1);
 
-  // the 3-booking limit is explained before offering a fourth
-  const t3 = await createBooking(bookings, users, A, { date: "2026-11-14", time: "19:00", party: 2, notes: "" }, NOW);
-  const limit = await ask({ kind: "book", date: "2026-11-15", time: "19:00", party: 2 });
-  check("at the 3-booking limit it explains instead of offering a 4th", t3.ok && /3 upcoming/.test(limit.text) && limit.outputs.length === 0);
+  // inside the cancellation cut-off nothing is cancelled
+  const soon = await createBooking(bookings, users, RV, { date: TODAY, time: "13:00", party: 2, notes: "" }, NOW);
+  const soonReply = await ask({ kind: "cancel", date: TODAY }, RV);
+  check("a booking inside the 2-hour cut-off isn't cancelled by chat (call the restaurant)", soon.ok && soonReply.outputs.length === 0 && /call|hours/i.test(soonReply.text) && (await mine(TODAY, ravi.id)).length === 1);
 
+  // the 3-booking limit is explained before booking a fourth
+  const t2 = await ask({ kind: "book", date: "2026-11-14", time: "19:00", party: 2 });
+  const t3 = await ask({ kind: "book", date: "2026-11-16", time: "19:00", party: 2 });
+  const limit = await ask({ kind: "book", date: "2026-11-17", time: "19:00", party: 2 });
+  check("at the 3-booking limit it explains instead of booking a 4th", t2.outputs[0]?.toolName === "booking_done" && t3.outputs[0]?.toolName === "booking_done" && /3 upcoming/.test(limit.text) && limit.outputs.length === 0 && (await mine("2026-11-17")).length === 0);
   console.log(fails === 0 ? "\nAll chat booking checks passed" : `\n${fails} FAILED`);
   process.exit(fails === 0 ? 0 : 1);
 })();

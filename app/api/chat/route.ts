@@ -12,7 +12,7 @@ import { getCurrentAccount, getCurrentUser } from "@/lib/auth/session";
 import { BOOKING_REQUIRED_MESSAGE, needsBooking, parseService, validateService } from "@/lib/service";
 import { getStore } from "@/lib/auth/store";
 import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
-import { checkRateLimit, checkWindow } from "@/lib/ratelimit";
+import { checkAuthLimit, checkRateLimit, checkWindow } from "@/lib/ratelimit";
 import { askedFrom, resolveBookingRequest } from "@/lib/bookingIntent";
 import { handleBookingRequest } from "@/lib/bookingChat";
 import { getBookingStore } from "@/lib/bookings/store";
@@ -22,7 +22,7 @@ import { detectOrderIntent, handleOrderIntent, type StaticOutput } from "@/lib/o
 
 export const maxDuration = 60;
 
-const MAX_MESSAGES = 14; // history window; every message is re-sent on every model call
+const MAX_MESSAGES = 30; // history window (the AI sees only the text; every message is re-sent on every model call)
 
 function textOf(m: UIMessage | undefined): string {
   return (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
@@ -99,11 +99,14 @@ export async function POST(req: Request) {
   const userTexts = messages.filter((m) => m.role === "user").map(textOf);
   const lastUserAt = messages.lastIndexOf(lastUser as UIMessage);
   const prevAssistant = messages.slice(0, Math.max(lastUserAt, 0)).reverse().find((m) => m.role === "assistant");
-  // The waiter's last message offered (or just made) a booking: then "cancel it" means that booking.
-  const justBooking = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && getToolName(p) === "booking_offer");
-  const bookingReq = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal(), justBooking);
+  // The waiter's last message was a booking just made: then a bare "cancel it" means that booking.
+  const justBooked = prevAssistant?.parts
+    .filter(isToolUIPart)
+    .find((p) => getToolName(p) === "booking_done" && p.state === "output-available")?.output as { booking?: { id?: string } } | undefined;
+  const bookingReq = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal(), !!justBooked?.booking?.id);
   if (bookingReq) {
     if (!checkWindow(`chatbook:${ip}`, 40, 10 * 60_000)) return staticReply("You're asking about tables very quickly. Please wait a few minutes and try again, or use the Book a table page.");
+    if (bookingReq.kind === "cancel" && justBooked?.booking?.id && !bookingReq.date && !bookingReq.time) bookingReq.id = justBooked.booking.id;
     const r = await handleBookingRequest({ bookings: getBookingStore(), users: getStore() }, (await getCurrentUser()) ?? undefined, bookingReq);
     return staticReply(r.text, r.outputs);
   }
@@ -141,9 +144,10 @@ export async function POST(req: Request) {
 
   // Cancel / refund requests are answered by code too (never by the AI): explain the rule and offer a confirm button.
   // (Right after an order was placed or its cancel button was shown, a bare "cancel it" means that order.)
-  const justOrdered = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && ["place_order", "cancel_offer"].includes(getToolName(p)));
+  const justOrdered = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && getToolName(p) === "place_order");
   const cancelIntent = detectCancelIntent(userText, justOrdered);
   if (cancelIntent) {
+    if (user && !checkAuthLimit(`cancel:${user.id}`)) return staticReply("That's a lot of cancel requests in a short time. Please wait a few minutes and try again.");
     const r = await handleCancelIntent(getStore(), user?.id, cancelIntent);
     return staticReply(r.text, r.outputs);
   }

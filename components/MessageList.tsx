@@ -2,7 +2,8 @@ import { getToolName, isToolUIPart, type UIMessage } from "ai";
 import type { ReactNode } from "react";
 import { MenuCard, type MenuCardItem } from "./MenuCard";
 import { CancelOrder } from "./CancelOrder";
-import { BookingCancelOffer, BookingOffer, BookingSlots } from "./BookingChatCards";
+import { BookingCancelOffer, BookingCancelledCard, BookingDoneCard, BookingSlots, OrderCancelledCard } from "./BookingChatCards";
+import type { BookingRef } from "@/lib/booking";
 import { OrderConfirm } from "./OrderConfirm";
 import type { CartViewData } from "./CartPanel";
 import type { Profile } from "@/lib/profile";
@@ -99,9 +100,11 @@ export function MessageList({ messages, busy, onAdd, onSend, profile }: Props) {
                 if (name === "place_order" && out?.ok && out.orderId && out.cart) {
                   return <OrderConfirm key={i} orderId={out.orderId} cart={out.cart} service={out.service} />;
                 }
-                if (name === "booking_offer" && out?.ok) {
-                  const o = out as unknown as { date: string; time: string; party: number };
-                  return <BookingOffer key={i} callKey={p.toolCallId} date={o.date} time={o.time} party={o.party} />;
+                if (name === "booking_done" && out?.ok) return <BookingDoneCard key={i} booking={(out as unknown as { booking: BookingRef }).booking} />;
+                if (name === "booking_cancelled" && out?.ok) return <BookingCancelledCard key={i} booking={(out as unknown as { booking: BookingRef }).booking} />;
+                if (name === "order_cancelled" && out?.ok) {
+                  const o = out as unknown as { orderId: string; refund: { amount: number; ref: string } };
+                  return <OrderCancelledCard key={i} orderId={o.orderId} refund={o.refund} />;
                 }
                 if (name === "booking_slots" && out?.ok) {
                   const o = out as unknown as { date: string; party: number; times: string[] };
@@ -109,12 +112,11 @@ export function MessageList({ messages, busy, onAdd, onSend, profile }: Props) {
                 }
                 if (name === "booking_cancel_offer" && out?.ok) {
                   const o = out as unknown as { booking: { id: string; date: string; time: string; party: number; table: string }; allowed: boolean; message: string };
-                  const offers = m.parts.filter((x) => isToolUIPart(x) && getToolName(x) === "booking_cancel_offer").length;
-                  return <BookingCancelOffer key={i} callKey={p.toolCallId} booking={o.booking} allowed={o.allowed} message={o.message} single={offers === 1} />;
+                  return <BookingCancelOffer key={i} booking={o.booking} allowed={o.allowed} message={o.message} />;
                 }
                 if (name === "cancel_offer" && out?.ok && out.orderId) {
                   const o = out as { orderId: string; total: number; minutesLeft: number };
-                  return <CancelOrder key={i} orderId={o.orderId} total={o.total} minutesLeft={o.minutesLeft} callKey={p.toolCallId} />;
+                  return <CancelOrder key={i} orderId={o.orderId} total={o.total} minutesLeft={o.minutesLeft} />;
                 }
               }
               return null;

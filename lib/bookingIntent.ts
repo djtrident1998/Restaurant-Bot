@@ -1,6 +1,6 @@
 // Booking and cancelling a table by chat or voice. Recognised by code (no AI call, no tokens), like the cart and cancel-order
-// buttons: the words only PREPARE a booking; nothing is booked or cancelled until the customer presses (or says "yes" to) a
-// confirm button, which calls the same checked booking API as the Book a table page. Browser-safe and pure.
+// buttons. This file only READS the words (day, time, party size, book or cancel); lib/bookingChat.ts carries a clear request
+// out through the checked booking service. Browser-safe and pure.
 import { BOOKING, addDays, todayLocal } from "./booking";
 
 export type BookingAsk = "book" | "cancel" | null;
@@ -9,13 +9,14 @@ export interface BookingFields {
   time?: string;
   party?: number;
 }
-export type BookingRequest = ({ kind: "book" } & BookingFields) | ({ kind: "cancel" } & Pick<BookingFields, "date" | "time">);
+/** `id` (cancel only) is set by the server when the waiter's last message was a booking just made: "cancel it" means that one. */
+export type BookingRequest = ({ kind: "book" } & BookingFields) | ({ kind: "cancel"; id?: string } & Pick<BookingFields, "date" | "time">);
 
 /** Phrases the waiter uses when it needs more detail; the next message is then read as an answer. */
 export const BOOKING_ASK_MARKER = "to book your table";
 export const CANCEL_ASK_MARKER = "which booking would you like to cancel";
 
-const norm = (s: string) => s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9:'./\- ]/g, " ").replace(/\s+/g, " ").trim();
+const norm = (s: string) => s.toLowerCase().replace(/[â€™']/g, "'").replace(/[^a-z0-9:'./\- ]/g, " ").replace(/\s+/g, " ").trim();
 
 const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12 };
 const NUM = "(\\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)";
@@ -119,6 +120,9 @@ const BOOKING_NOUN = /\b(bookings?|reservations?|tables?|seats?)\b/;
 
 const BARE_CANCEL = /^(?:(?:please|ok|okay|so|hey)\s+)*(?:(?:i (?:want|need|would like|wanna) to|i'd like to|let's|can you|could you)\s+)?(?:cancel|undo|delete|remove)(?: (?:it|that|this|the booking|my booking|that booking|the table|my table|the one i just made))?(?: please)?$/;
 
+/** A bare "cancel it" / "cancel" (only meaningful right after a booking was made). */
+export const isBareCancel = (text: string): boolean => BARE_CANCEL.test(norm(text));
+
 export const isCancelBookingTalk = (text: string): boolean => {
   const t = norm(text);
   return !!t && t.length <= 200 && CANCEL_WORD.test(t) && BOOKING_NOUN.test(t) && !/\border\b/.test(t);
@@ -180,19 +184,6 @@ export function askedFrom(assistantText: string | undefined): BookingAsk {
   if (t.includes(BOOKING_ASK_MARKER)) return "book";
   if (t.includes(CANCEL_ASK_MARKER)) return "cancel";
   return null;
-}
-
-const YES_BOOKING = /^(?:yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|do it|that's right|that is right|book it|book this(?: table)?|yes book(?: it| this table| the table)?|confirm (?:the )?booking)$/;
-const YES_CANCEL = /^(?:yes|yeah|yep|yup|correct|confirm|confirmed|go ahead|do it|cancel it|cancel this(?: booking)?|cancel (?:the|my) booking|yes cancel(?: it| this| the booking| my booking)?)$/;
-const NO_BOOKING = /^(?:no|nope|nah|not|no thanks|no thank you|not now|never mind|nevermind|stop|wait|hold on|don't|do not|keep it|don't cancel|do not cancel|leave it)$/;
-
-/** A spoken or typed answer to a waiting "book this table?" / "cancel this booking?" offer. Strict whole phrases: casual "okay" is not a yes. */
-export function interpretBookingReply(text: string, kind: "book" | "cancel"): "yes" | "no" | null {
-  const t = norm(text).replace(/^(?:(?:ok|okay|alright|so|hey|please|and)\s+)+/, "").replace(/\s+(?:please|now|thanks|thank you)$/, "").trim();
-  if (!t || t.length > 40) return null;
-  if (NO_BOOKING.test(t)) return "no";
-  if (kind === "book" && /^(?:cancel|cancel (?:it|that|this)|forget it|skip it)$/.test(t)) return "no"; // "cancel" on an unconfirmed offer just drops the offer
-  return (kind === "book" ? YES_BOOKING : YES_CANCEL).test(t) ? "yes" : null;
 }
 
 /** The text a time-slot button sends. It parses back to exactly the same request. */

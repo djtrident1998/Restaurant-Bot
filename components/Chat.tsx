@@ -17,8 +17,8 @@ import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
 import { CancelBooking } from "./CancelBooking";
-import { BOOKING_CONFIRM_EVENT, BOOKING_DISMISS_EVENT, BOOKING_SETTLED_EVENT } from "./BookingChatCards";
-import { askedFrom, interpretBookingReply, looksLikeBookingTalk } from "@/lib/bookingIntent";
+import { askedFrom, isBareCancel, looksLikeBookingTalk } from "@/lib/bookingIntent";
+import { slimHistory } from "@/lib/chatHistory";
 import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
@@ -80,12 +80,13 @@ export function Chat({
   /** From /order?mode=dining&booking=ID (after booking a table): the dining order is for that booking. */
   initialBookingId?: string;
 }) {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [baseId, setBaseId] = useState<string | null>(null);
   const [service, setService] = useState<Service>(initialMode ? (initialMode === "dine-in" && initialBookingId ? { type: initialMode, bookingId: initialBookingId } : { type: initialMode }) : DEFAULT_SERVICE);
   // Delivery / Dining is step one: until the customer has chosen (or arrived with a choice), the menu waits behind it.
   const [chosen, setChosen] = useState<boolean>(!!initialMode);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
   const [input, setInput] = useState("");
+  const [blockedNote, setBlockedNote] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [guestTriedCheckout, setGuestTriedCheckout] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -103,7 +104,7 @@ export function Chat({
     }
     // Session id lives in sessionStorage, so it can only be read after mount (avoids SSR mismatch).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionId(id);
+    setBaseId(id);
   }, []);
 
   // Restore the last Delivery / Dining choice on this device (unless a link chose one). Read after mount: no SSR mismatch.
@@ -128,11 +129,27 @@ export function Chat({
     } catch {}
   }, [service, chosen]);
 
-  const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/chat", body: () => ({ sessionId }) }),
-    [sessionId],
-  );
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  // Delivery and Dining each have their OWN conversation, cart and voice session: what you said or ordered under Delivery
+  // never shows up (or answers) under Dining. Both chats stay alive, so switching back finds the earlier conversation.
+  const sessionIdFor = (mode: "dl" | "dn") => (baseId ? `${baseId}-${mode}` : null);
+  const transportFor = (mode: "dl" | "dn") => {
+    const sid = sessionIdFor(mode);
+    return new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({ sessionId: sid }),
+      // Only the recent text goes to the server (menu cards and other big results stay in the browser): keeps every request small.
+      prepareSendMessagesRequest: ({ messages: all, body }) => ({ body: { ...body, sessionId: sid, messages: slimHistory(all) } }),
+    });
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const transportDl = useMemo(() => transportFor("dl"), [baseId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const transportDn = useMemo(() => transportFor("dn"), [baseId]);
+  const chatDl = useChat({ id: `${baseId ?? "init"}-dl`, transport: transportDl });
+  const chatDn = useChat({ id: `${baseId ?? "init"}-dn`, transport: transportDn });
+  const dining = service.type === "dine-in";
+  const { messages, sendMessage, status, error } = dining ? chatDn : chatDl;
+  const sessionId = sessionIdFor(dining ? "dn" : "dl");
   const busy = status === "submitted" || status === "streaming";
 
   const refreshCart = useCallback(async () => {
@@ -161,20 +178,20 @@ export function Chat({
   // Dining food can only be ordered once a table is booked (the server enforces this too).
   const locked = chosen && service.type === "dine-in" && !bookings.some((b) => b.id === service.bookingId);
 
-  const [settled, setSettled] = useState<ReadonlySet<string>>(new Set());
-  useEffect(() => {
-    // A booking card that finished (booked, cancelled, dismissed or refused) is no longer waiting for a "yes".
-    const on = (e: Event) => setSettled((s) => new Set(s).add((e as CustomEvent<{ key: string }>).detail.key));
-    window.addEventListener(BOOKING_SETTLED_EVENT, on);
-    return () => window.removeEventListener(BOOKING_SETTLED_EVENT, on);
-  }, []);
-
   const send = (text: string) => {
     if (!sessionId || busy || !text.trim()) return;
     // Before a table exists, dining shows no menu: only the table-booking conversation (and its answers) may go through.
     const lastMsg = messages[messages.length - 1];
-    const inBookingTalk = lastMsg?.role === "assistant" && askedFrom(lastMsg.parts.map((p) => (p.type === "text" ? p.text : "")).join("")) !== null;
-    if (locked && !looksLikeBookingTalk(text) && !inBookingTalk) return;
+    // Still booking talk: the waiter just asked a booking question, or just showed a booking result/time buttons ("cancel it").
+    const inBookingTalk =
+      lastMsg?.role === "assistant" &&
+      (askedFrom(lastMsg.parts.map((p) => (p.type === "text" ? p.text : "")).join("")) !== null ||
+        (isBareCancel(text) && lastMsg.parts.some((p) => isToolUIPart(p) && getToolName(p) === "booking_done")));
+    if (locked && !looksLikeBookingTalk(text) && !inBookingTalk) {
+      setBlockedNote("Book a table first, then you can order food for it. Try: “Book a table for 4 tomorrow at 8 pm”.");
+      return;
+    }
+    setBlockedNote("");
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
 
@@ -228,23 +245,7 @@ export function Chat({
   // Spoken or typed ordering commands act like the buttons: "place order" starts checkout; after the read-back,
   // "yes"/"confirm" confirms and "no"/"change" goes back. The server still requires a signed-in session and a
   // recorded confirmation, and the AI can never confirm.
-  // A booking or cancel offer waiting for the customer (the latest card in the last waiter message, not yet settled).
-  const pendingBooking = useMemo(() => {
-    if (!last || last.role !== "assistant" || busy) return null;
-    const cards = last.parts.filter(isToolUIPart).filter((p) => p.state === "output-available" && ["booking_offer", "booking_cancel_offer", "cancel_offer"].includes(getToolName(p)));
-    if (cards.length === 0) return null;
-    const first = cards[0];
-    const kind = getToolName(first) === "booking_offer" ? ("book" as const) : ("cancel" as const);
-    if (kind === "cancel" && cards.length > 1) return null; // several bookings on offer: the customer taps the one they mean (an order cancel offer is always a single card)
-    return settled.has(first.toolCallId) ? null : { key: first.toolCallId, kind };
-  }, [last, busy, settled]);
-
   const handleUserText = (text: string) => {
-    if (pendingBooking) {
-      const reply = interpretBookingReply(text, pendingBooking.kind);
-      if (reply === "yes") return void window.dispatchEvent(new CustomEvent(BOOKING_CONFIRM_EVENT, { detail: { key: pendingBooking.key } }));
-      if (reply === "no") return void window.dispatchEvent(new CustomEvent(BOOKING_DISMISS_EVENT, { detail: { key: pendingBooking.key } }));
-    }
     const cmd = interpretCommand(text, { awaitingConfirm });
     if (cmd === "confirm") return void confirmOrder();
     if (cmd === "change") return send("No, I want to change something");
@@ -315,6 +316,11 @@ export function Chat({
               {(voice.listening || voice.error) && (
                 <p role="status" className={`mt-2 text-sm ${voice.error ? "text-red-600" : "text-gold-soft"}`}>
                   {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
+                </p>
+              )}
+              {blockedNote && (
+                <p role="status" className="mt-2 text-sm text-muted">
+                  {blockedNote}
                 </p>
               )}
               <form
