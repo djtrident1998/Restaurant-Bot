@@ -64,10 +64,13 @@ class FileBookingStore implements BookingStore {
 class BlobBookingStore implements BookingStore {
   kind = "blob" as const;
   private cas: ReturnType<typeof makeCas>;
-  constructor(cas: ReturnType<typeof makeCas> = blobCas()) {
+  private prefix: string;
+  /** `prefix` is only changed by the storage self-check (scratch records, never real bookings). */
+  constructor(cas: ReturnType<typeof makeCas> = blobCas(), prefix = "bookings") {
     this.cas = cas;
+    this.prefix = prefix;
   }
-  private pathFor = (date: string) => `bookings/${date}.json`;
+  private pathFor = (date: string) => `${this.prefix}/${date}.json`;
   async read(date: string) {
     // Availability display only: a plain read is enough (booking itself re-checks inside the atomic update).
     const r = await this.cas.backend.get(this.pathFor(date));

@@ -181,10 +181,13 @@ class FileStore implements UserStore {
 class BlobStore implements UserStore {
   kind = "blob" as const;
   private cas: ReturnType<typeof makeCas>;
-  constructor(cas: ReturnType<typeof makeCas> = blobCas()) {
+  private prefix: string;
+  /** `prefix` is only changed by the storage self-check, which works on scratch records, never on real accounts. */
+  constructor(cas: ReturnType<typeof makeCas> = blobCas(), prefix = "accounts") {
     this.cas = cas;
+    this.prefix = prefix;
   }
-  private pathFor = (id: string) => `accounts/${id}.json`;
+  private pathFor = (id: string) => `${this.prefix}/${id}.json`;
 
   async findById(id: string) {
     // A plain read (no version lookup) keeps page loads fast; writes below re-read with their own version check.
