@@ -6,6 +6,7 @@ import { dummyHash, hashPassword, verifyPassword } from "@/lib/auth/password";
 import { loginSchema, signupSchema, type AuthFormState } from "@/lib/auth/schemas";
 import { deleteAccount } from "@/lib/account";
 import { getBookingStore } from "@/lib/bookings/store";
+import { safeNext } from "@/lib/auth/next";
 import { endSession, getCurrentUser, startSession } from "@/lib/auth/session";
 import { getStore, userIdFor } from "@/lib/auth/store";
 import { checkAuthLimit } from "@/lib/ratelimit";
@@ -43,7 +44,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   if (!created) return { fieldErrors: { email: "An account with this email already exists. Try signing in." } };
 
   await startSession(userIdFor(email), name);
-  redirect("/order");
+  redirect(safeNext(formData.get("next")) ?? "/order");
 }
 
 export async function login(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -59,7 +60,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
   if (!user || !ok) return { error: "Incorrect email or password." };
 
   await startSession(user.id, user.name);
-  redirect("/order");
+  redirect(safeNext(formData.get("next")) ?? "/order");
 }
 
 /** Permanently delete the signed-in customer's account (needs their password), then sign them out. */

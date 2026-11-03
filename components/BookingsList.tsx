@@ -70,7 +70,7 @@ export function BookingsList({ bookings }: { bookings: BookingRef[] }) {
               </p>
               {up && (
                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <Link href="/order?mode=dining" className="btn-ghost px-4 py-2 text-sm">
+                  <Link href={`/order?mode=dining&booking=${b.id}`} className="btn-ghost px-4 py-2 text-sm">
                     Pre-order food
                   </Link>
                   <AddToCalendar booking={b} />

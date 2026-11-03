@@ -16,8 +16,9 @@ import { useVoiceInput } from "./useVoiceInput";
 import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
+import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
-import type { BookingRef } from "@/lib/booking";
+import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
 import { DEFAULT_SERVICE, parseService, serviceLabel, type Service, type ServiceType } from "@/lib/service";
 
 const EMPTY_CART: CartViewData = { lines: [], itemCount: 0, total: 0 };
@@ -63,6 +64,7 @@ export function Chat({
   profile,
   bookings = [],
   initialMode,
+  initialBookingId,
 }: {
   userName?: string;
   signedIn?: boolean;
@@ -72,9 +74,11 @@ export function Chat({
   bookings?: BookingRef[];
   /** From a link like /order?mode=dining; otherwise the last choice on this device, otherwise delivery. */
   initialMode?: ServiceType;
+  /** From /order?mode=dining&booking=ID (after booking a table): the dining order is for that booking. */
+  initialBookingId?: string;
 }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [service, setService] = useState<Service>(initialMode ? { type: initialMode } : DEFAULT_SERVICE);
+  const [service, setService] = useState<Service>(initialMode ? (initialMode === "dine-in" && initialBookingId ? { type: initialMode, bookingId: initialBookingId } : { type: initialMode }) : DEFAULT_SERVICE);
   // Delivery / Dining is step one: until the customer has chosen (or arrived with a choice), the menu waits behind it.
   const [chosen, setChosen] = useState<boolean>(!!initialMode);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
@@ -151,8 +155,11 @@ export function Chat({
     else bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, status]);
 
+  // Dining food can only be ordered once a table is booked (the server enforces this too).
+  const locked = chosen && service.type === "dine-in" && !bookings.some((b) => b.id === service.bookingId);
+
   const send = (text: string) => {
-    if (!sessionId || busy || !text.trim()) return;
+    if (!sessionId || busy || locked || !text.trim()) return;
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
 
@@ -216,6 +223,61 @@ export function Chat({
     }
     send(text);
   };
+
+  // Dining without a booked table: no menu, cart or chat yet, only the way to get a table.
+  if (locked) {
+    return (
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 overflow-y-auto px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 lg:pt-8">
+        <section className="card p-3 sm:p-5" data-testid="booking-gate">
+          <ServiceBar service={service} onChange={setService} bookings={bookings} signedIn={signedIn} compact />
+          <div className="mt-4 rounded-2xl border border-gold/15 bg-gradient-to-br from-[#fff1ee] via-[#fff7f2] to-panel p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-soft">Dining</p>
+            <h2 className="font-display mt-1 text-2xl text-ivory sm:text-3xl">Book your table first</h2>
+            <p className="mt-2 text-sm text-muted">Once your table is booked, you can pre-order your food here so it is ready when you arrive.</p>
+            {!signedIn ? (
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link href={withNext("/login", "/book")} className="btn-gold px-6 py-3 text-sm">
+                  Sign in to book
+                </Link>
+                <Link href={withNext("/signup", "/book")} className="btn-ghost px-6 py-3 text-sm">
+                  Create account
+                </Link>
+              </div>
+            ) : bookings.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-ivory">You have a table booked. Pre-order for:</p>
+                <ul className="mt-2 space-y-2">
+                  {bookings.map((b) => (
+                    <li key={b.id}>
+                      <button
+                        type="button"
+                        onClick={() => setService({ type: "dine-in", bookingId: b.id })}
+                        className="w-full rounded-xl border-2 border-line bg-panel px-4 py-3 text-left text-sm transition hover:border-gold"
+                      >
+                        <span className="font-semibold text-ivory">
+                          {formatDate(b.date)} · {formatTime(b.time)} · party of {b.party}
+                        </span>
+                        <span className="block text-muted">Table {b.table} · pre-order food →</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/book" className="mt-3 inline-block py-2 text-sm font-semibold text-gold-soft underline-offset-4 hover:underline">
+                  Book another table
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <Link href="/book" className="btn-gold px-6 py-3 text-sm">
+                  Book a table
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col gap-3 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 lg:pt-4">

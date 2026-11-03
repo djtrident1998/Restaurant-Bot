@@ -29,6 +29,13 @@ export function validateService(s: Service, bookings: BookingRef[] | undefined, 
   return ok ? s : { type: "dine-in" };
 }
 
+/** Dining orders are only possible with a table booked: a dine-in selection without a (valid) booking can't order yet. */
+export function needsBooking(s: Service): boolean {
+  return s.type === "dine-in" && !s.bookingId;
+}
+
+export const BOOKING_REQUIRED_MESSAGE = "Please book a table first. Food for dining can be ordered once your table is booked.";
+
 /** "Delivery", "Dining — walk-in", or "Dining — table booked Thu, 5 Nov at 7:30 pm (T5)". */
 export function serviceLabel(s: Service, bookings?: BookingRef[]): string {
   if (s.type === "delivery") return "Delivery";

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { withNext } from "@/lib/auth/next";
 import { useEffect, useMemo, useState } from "react";
 import { BOOKING, addDays, formatDate, formatTime, type BookingRef, type SlotStatus } from "@/lib/booking";
 import { AddToCalendar } from "./AddToCalendar";
@@ -61,6 +62,9 @@ export function BookingForm({
   const chosen = slotMap.get(time);
   const canSubmit = signedIn && !!chosen?.available && !busy && upcomingCount < BOOKING.maxActivePerUser;
 
+  // After signing in, come straight back to this search (same date, party and time), not the generic start.
+  const backHere = `/book?date=${date}&party=${party}${time ? `&time=${encodeURIComponent(time)}` : ""}`;
+
   async function submit() {
     setBusy(true);
     setError("");
@@ -95,7 +99,7 @@ export function BookingForm({
           Booking <span className="font-mono font-semibold text-ivory">{done.id}</span>. Free cancellation until {BOOKING.cancelCutoffMin / 60} hours before. We hold your table for {BOOKING.holdMin} minutes after your booking time.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Link href="/order?mode=dining" className="btn-gold px-6 py-3 text-sm">
+          <Link href={`/order?mode=dining&booking=${done.id}`} className="btn-gold px-6 py-3 text-sm">
             Pre-order your food
           </Link>
           <AddToCalendar booking={done} />
@@ -251,10 +255,10 @@ export function BookingForm({
         <div className="rounded-xl bg-panel2 p-4 text-center text-sm">
           <p className="text-ivory">Sign in to confirm your table.</p>
           <div className="mt-2 flex justify-center gap-3">
-            <Link href="/login" className="btn-gold px-5 py-2 text-sm">
+            <Link href={withNext("/login", backHere)} className="btn-gold px-5 py-2 text-sm">
               Sign in
             </Link>
-            <Link href="/signup" className="btn-ghost px-5 py-2 text-sm">
+            <Link href={withNext("/signup", backHere)} className="btn-ghost px-5 py-2 text-sm">
               Create account
             </Link>
           </div>
