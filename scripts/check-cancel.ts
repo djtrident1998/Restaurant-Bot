@@ -81,20 +81,21 @@ const mk = (email: string, orders: { id: string; ageMin: number; total?: number 
   await store2.create(meera);
   const guest = await handleCancelIntent(store2, undefined, {}, NOW, W);
   check("guest asked to sign in", /sign in/i.test(guest.text) && guest.outputs.length === 0);
-  const offer = await handleCancelIntent(store2, meera.id, {}, NOW, W);
-  check("latest order offered with a button", offer.outputs[0]?.toolName === "cancel_offer" && (offer.outputs[0].output as { orderId: string }).orderId === "SR-5555", offer.text);
-  check("offer states full refund", /full ₹750/.test(offer.text));
-  check("chat reply alone did NOT cancel", !(await store2.findById(meera.id))!.orders[0].cancelledAt);
   const tooLate = await handleCancelIntent(store2, meera.id, { orderId: "SR-6666" }, NOW, W);
-  check("old order explained, no button", tooLate.outputs.length === 0 && /minutes/.test(tooLate.text));
+  check("old order explained, nothing cancelled", tooLate.outputs.length === 0 && /minutes/.test(tooLate.text) && !(await store2.findById(meera.id))!.orders.find((o) => o.id === "SR-6666")!.cancelledAt);
   const missing = await handleCancelIntent(store2, meera.id, { orderId: "SR-0000" }, NOW, W);
   check("unknown order id -> not found text", /couldn't find/.test(missing.text) && missing.outputs.length === 0);
   const none = await handleCancelIntent(store2, userIdFor("nobody@example.com"), {}, NOW, W);
   check("no orders -> friendly text", /nothing to cancel/.test(none.text));
-  await cancelOrder(store2, meera.id, "SR-5555", NOW, W);
-  const again = await handleCancelIntent(store2, meera.id, {}, NOW, W);
-  check("already cancelled -> says so", /already been cancelled/.test(again.text) && again.outputs.length === 0);
-
+  const done = await handleCancelIntent(store2, meera.id, {}, NOW, W);
+  const doneOut = done.outputs[0]?.output as { orderId: string; refund: { amount: number; ref: string } } | undefined;
+  check("'cancel my order' cancels the newest open order straight away", done.outputs[0]?.toolName === "order_cancelled" && doneOut?.orderId === "SR-5555" && doneOut.refund.amount === 750 && /full refund of \*\*₹750/.test(done.text));
+  const savedOrder = (await store2.findById(meera.id))!.orders.find((o) => o.id === "SR-5555")!;
+  check("the order is stored as cancelled with the full refund (same record as the button)", savedOrder.cancelledAt === NOW && savedOrder.refund?.amount === 750 && savedOrder.refund.ref === "RF-5555");
+  const again = await handleCancelIntent(store2, meera.id, { orderId: "SR-5555" }, NOW, W);
+  check("asking again for the same order says it is already cancelled (no second refund)", /already been cancelled/.test(again.text) && again.outputs.length === 0 && (await store2.findById(meera.id))!.orders.find((o) => o.id === "SR-5555")!.refund?.at === NOW);
+  const next = await handleCancelIntent(store2, meera.id, {}, NOW, W);
+  check("with only an old order left, a bare request explains the window instead of cancelling it", next.outputs.length === 0 && /minutes/.test(next.text));
   // ---- invoice ----
   const rec = (await store2.findById(meera.id))!;
   const inv = buildInvoiceData({ name: "Meera", email: rec.email }, rec.orders[0]);

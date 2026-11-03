@@ -1,4 +1,4 @@
-import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, getToolName, isToolUIPart, streamText, type UIMessage } from "ai";
 import { agentConfig } from "@/lib/agent";
 import { buildTools } from "@/lib/tools";
 import { streamWithFailover } from "@/lib/failover";
@@ -12,13 +12,19 @@ import { getCurrentAccount, getCurrentUser } from "@/lib/auth/session";
 import { BOOKING_REQUIRED_MESSAGE, needsBooking, parseService, validateService } from "@/lib/service";
 import { getStore } from "@/lib/auth/store";
 import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
-import { checkRateLimit } from "@/lib/ratelimit";
+import { checkAuthLimit, checkRateLimit, checkWindow } from "@/lib/ratelimit";
+import { askedFrom, resolveBookingRequest } from "@/lib/bookingIntent";
+import { handleBookingRequest } from "@/lib/bookingChat";
+import { getBookingStore } from "@/lib/bookings/store";
+import { isUpcoming, todayLocal } from "@/lib/booking";
+import { understandMessage } from "@/lib/bookingAi";
+import { extractWithChain } from "@/lib/bookingAiRun";
 import { COURSE_ASK_TEXT, courseOutputs, detectMenuIntent } from "@/lib/course";
 import { detectOrderIntent, handleOrderIntent, type StaticOutput } from "@/lib/orderFlow";
 
 export const maxDuration = 60;
 
-const MAX_MESSAGES = 14; // history window; every message is re-sent on every model call
+const MAX_MESSAGES = 40; // history window (the AI sees only the text; every message is re-sent on every model call)
 
 function textOf(m: UIMessage | undefined): string {
   return (m?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join("");
@@ -90,6 +96,43 @@ export async function POST(req: Request) {
   const gate = checkUserInput(userText);
   if (!gate.ok) return staticReply(gate.reply);
 
+  // Booking and cancelling by chat or voice. The instant reader handles the common phrasings; anything else about tables or
+  // cancelling is understood by the AI (any wording, any word order), which only fills fields: a clear request is then carried
+  // out by code through the same checked services as the buttons. Works in every mode, including Dining before a table exists.
+  const userTexts = messages.filter((m) => m.role === "user").map(textOf);
+  const lastUserAt = messages.lastIndexOf(lastUser as UIMessage);
+  const prevAssistant = messages.slice(0, Math.max(lastUserAt, 0)).reverse().find((m) => m.role === "assistant");
+  const prevParts = (prevAssistant?.parts ?? []).filter(isToolUIPart).filter((p) => p.state === "output-available");
+  const justBooked = prevParts.find((p) => getToolName(p) === "booking_done")?.output as { booking?: { id?: string } } | undefined;
+  const offeredTimes = (prevParts.find((p) => getToolName(p) === "booking_slots")?.output as { times?: string[] } | undefined)?.times ?? [];
+  const justOrdered = !!prevAssistant?.parts.some((p) => isToolUIPart(p) && getToolName(p) === "place_order");
+  const account0 = await getCurrentAccount();
+  const upcoming = (account0?.bookings ?? []).filter((b) => isUpcoming(b));
+  const det = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal(), !!justBooked?.booking?.id);
+  const understood = await understandMessage({
+    det,
+    turns: messages.slice(-6).map((m) => ({ role: m.role === "user" ? ("user" as const) : ("waiter" as const), text: textOf(m) })),
+    today: todayLocal(),
+    upcoming,
+    orders: account0?.orders ?? [],
+    offeredTimes,
+    handledElsewhere: !!detectCancelIntent(userText, justOrdered) || !!detectMenuIntent(userText) || !!detectOrderIntent(userText),
+    extract: async (p) => (checkWindow(`bkai:${ip}`, 20, 60_000) ? extractWithChain(p) : null),
+  });
+  if (understood && understood.kind !== "cancel_order") {
+    if (!checkWindow(`chatbook:${ip}`, 40, 10 * 60_000)) return staticReply("You're asking about tables very quickly. Please wait a few minutes and try again, or use the Book a table page.");
+    if (understood.kind === "book" && /\b(instead|change|move|shift|switch|reschedule|make it|push it|rather)\b/i.test(userText)) understood.move = true;
+    if (understood.kind === "cancel" && justBooked?.booking?.id && !understood.id && !understood.date && !understood.time) understood.id = justBooked.booking.id;
+    const r = await handleBookingRequest({ bookings: getBookingStore(), users: getStore() }, (await getCurrentUser()) ?? undefined, understood);
+    return staticReply(r.text, r.outputs);
+  }
+  if (understood?.kind === "cancel_order") {
+    const u = await getCurrentUser();
+    if (u && !checkAuthLimit(`cancel:${u.id}`)) return staticReply("That's a lot of cancel requests in a short time. Please wait a few minutes and try again.");
+    const r = await handleCancelIntent(getStore(), u?.id, { orderId: understood.orderId });
+    return staticReply(r.text, r.outputs);
+  }
+
   // Dining food is ordered only AFTER a table is booked: no menu, cart or checkout for a dining selection without one.
   // (The booking must be one of THIS customer's own upcoming ones; only a dining request needs the account read here.)
   const wanted = parseService(body.service);
@@ -122,8 +165,10 @@ export async function POST(req: Request) {
   }
 
   // Cancel / refund requests are answered by code too (never by the AI): explain the rule and offer a confirm button.
-  const cancelIntent = detectCancelIntent(userText);
+  // (Right after an order was placed or its cancel button was shown, a bare "cancel it" means that order.)
+  const cancelIntent = detectCancelIntent(userText, justOrdered);
   if (cancelIntent) {
+    if (user && !checkAuthLimit(`cancel:${user.id}`)) return staticReply("That's a lot of cancel requests in a short time. Please wait a few minutes and try again.");
     const r = await handleCancelIntent(getStore(), user?.id, cancelIntent);
     return staticReply(r.text, r.outputs);
   }

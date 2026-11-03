@@ -17,6 +17,7 @@ import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
 import { CancelBooking } from "./CancelBooking";
+import { slimHistory } from "@/lib/chatHistory";
 import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
@@ -78,12 +79,13 @@ export function Chat({
   /** From /order?mode=dining&booking=ID (after booking a table): the dining order is for that booking. */
   initialBookingId?: string;
 }) {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [baseId, setBaseId] = useState<string | null>(null);
   const [service, setService] = useState<Service>(initialMode ? (initialMode === "dine-in" && initialBookingId ? { type: initialMode, bookingId: initialBookingId } : { type: initialMode }) : DEFAULT_SERVICE);
   // Delivery / Dining is step one: until the customer has chosen (or arrived with a choice), the menu waits behind it.
   const [chosen, setChosen] = useState<boolean>(!!initialMode);
   const [cart, setCart] = useState<CartViewData>(EMPTY_CART);
   const [input, setInput] = useState("");
+  const [blockedNote, setBlockedNote] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [guestTriedCheckout, setGuestTriedCheckout] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -101,7 +103,7 @@ export function Chat({
     }
     // Session id lives in sessionStorage, so it can only be read after mount (avoids SSR mismatch).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSessionId(id);
+    setBaseId(id);
   }, []);
 
   // Restore the last Delivery / Dining choice on this device (unless a link chose one). Read after mount: no SSR mismatch.
@@ -126,11 +128,27 @@ export function Chat({
     } catch {}
   }, [service, chosen]);
 
-  const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/chat", body: () => ({ sessionId }) }),
-    [sessionId],
-  );
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  // Delivery and Dining each have their OWN conversation, cart and voice session: what you said or ordered under Delivery
+  // never shows up (or answers) under Dining. Both chats stay alive, so switching back finds the earlier conversation.
+  const sessionIdFor = (mode: "dl" | "dn") => (baseId ? `${baseId}-${mode}` : null);
+  const transportFor = (mode: "dl" | "dn") => {
+    const sid = sessionIdFor(mode);
+    return new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({ sessionId: sid }),
+      // Only the recent text goes to the server (menu cards and other big results stay in the browser): keeps every request small.
+      prepareSendMessagesRequest: ({ messages: all, body }) => ({ body: { ...body, sessionId: sid, messages: slimHistory(all) } }),
+    });
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const transportDl = useMemo(() => transportFor("dl"), [baseId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const transportDn = useMemo(() => transportFor("dn"), [baseId]);
+  const chatDl = useChat({ id: `${baseId ?? "init"}-dl`, transport: transportDl });
+  const chatDn = useChat({ id: `${baseId ?? "init"}-dn`, transport: transportDn });
+  const dining = service.type === "dine-in";
+  const { messages, sendMessage, status, error, stop } = dining ? chatDn : chatDl;
+  const sessionId = sessionIdFor(dining ? "dn" : "dl");
   const busy = status === "submitted" || status === "streaming";
 
   const refreshCart = useCallback(async () => {
@@ -159,10 +177,39 @@ export function Chat({
   // Dining food can only be ordered once a table is booked (the server enforces this too).
   const locked = chosen && service.type === "dine-in" && !bookings.some((b) => b.id === service.bookingId);
 
+  // A message is never silently dropped: if the waiter is still answering the last one, it is held and sent the moment that
+  // finishes. (The server decides what a message means; before a table exists in Dining it only accepts table talk.)
+  const [queued, setQueued] = useState<string | null>(null);
   const send = (text: string) => {
-    if (!sessionId || busy || locked || !text.trim()) return;
+    if (!text.trim()) return;
+    setBlockedNote("");
+    if (busy || !sessionId) {
+      setQueued(text); // also held while the page is still setting up, so a first message is never lost
+      return;
+    }
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
+
+  useEffect(() => {
+    if (busy || !sessionId || queued === null) return;
+    const q = queued;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQueued(null);
+    sendMessage({ text: q }, { body: { service } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, queued, sessionId]);
+
+  // A reply that has not come back after a long time (a slow network hop) is abandoned, so the chat is never stuck.
+  useEffect(() => {
+    if (!busy) return;
+    const t = setTimeout(() => {
+      stop();
+      setQueued(null);
+      setBlockedNote("That took longer than expected, so I stopped waiting. Please say it again.");
+    }, 40_000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   // Voice: speak your question; the words appear in the box as you talk and are sent when you finish.
   const voice = useVoiceInput({
@@ -272,6 +319,64 @@ export function Chat({
               </div>
             )}
           </div>
+
+          {signedIn && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-ivory">Or just tell the waiter</p>
+              <p className="text-xs text-muted">Type or tap the microphone, for example “Book a table for 4 tomorrow at 8 pm” or “Cancel my booking”.</p>
+              {messages.length > 0 && (
+                <div className="mt-3">
+                  <MessageList messages={messages} busy={busy} onAdd={() => undefined} onSend={send} profile={profile} />
+                </div>
+              )}
+              {(voice.listening || voice.error) && (
+                <p role="status" className={`mt-2 text-sm ${voice.error ? "text-red-600" : "text-gold-soft"}`}>
+                  {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
+                </p>
+              )}
+              {(blockedNote || queued || error) && (
+                <p role="status" className="mt-2 text-sm text-muted">
+                  {blockedNote ||
+                    (queued ? "Sending that as soon as the waiter is free…" : /booking-required/.test(error?.message ?? "") ? "Book a table first, then you can order food for it. Tell me when and for how many." : "Something went wrong. Please try again.")}
+                </p>
+              )}
+              <form
+                className="mt-2 flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (voice.listening) voice.stop();
+                  handleUserText(input);
+                  setInput("");
+                }}
+              >
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={voice.listening ? "Listening…" : "Book a table for 4 tomorrow at 8 pm"}
+                  maxLength={400}
+                  aria-label="Tell the waiter about your table"
+                  className="min-w-0 flex-1 rounded-full border border-line bg-panel2 px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold focus:bg-panel"
+                />
+                <button
+                  type="button"
+                  onClick={voice.listening ? voice.stop : voice.start}
+                  disabled={busy || !sessionId}
+                  aria-pressed={voice.listening}
+                  aria-label={voice.listening ? "Stop listening" : "Speak your request"}
+                  className={`btn-ghost flex h-11 w-11 shrink-0 items-center justify-center ${voice.listening ? "mic-listening" : "text-gold-soft"} ${!voice.supported ? "opacity-50" : ""}`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0" />
+                    <path d="M12 18v3" />
+                  </svg>
+                </button>
+                <button type="submit" disabled={busy || !sessionId || !input.trim()} className="btn-gold px-5 py-2.5 text-sm">
+                  Send
+                </button>
+              </form>
+            </div>
+          )}
         </section>
       </div>
     );
@@ -408,7 +513,7 @@ export function Chat({
               </div>
             )}
             <div className="mt-3">
-              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} profile={profile} />
+              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} onSend={send} profile={profile} />
             </div>
             {error && <p className="mt-3 text-sm text-red-600">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
             <div ref={bottomRef} />
@@ -487,6 +592,11 @@ export function Chat({
               Send
             </button>
           </form>
+          {(blockedNote || queued) && (
+            <p role="status" className="mt-2 text-center text-sm text-muted">
+              {blockedNote || "Sending that as soon as the waiter is free…"}
+            </p>
+          )}
           <p className="mt-2 text-center text-xs text-muted">AI waiter — answers can be wrong. Please confirm allergies with the restaurant.</p>
         </section>
 
