@@ -31,7 +31,7 @@ export function getLimits(env: NodeJS.ProcessEnv = process.env): Limits {
     paidPerDay: int(env.LIMIT_PAID_PER_DAY, 60, 0, 1_000_000),
     maxInputChars: int(env.LIMIT_INPUT_CHARS, 400, 50, 4000),
     maxHistoryMsgChars: int(env.LIMIT_HISTORY_MSG_CHARS, 800, 100, 4000),
-    maxHistoryTotalChars: int(env.LIMIT_HISTORY_TOTAL_CHARS, 8000, 500, 40_000),
+    maxHistoryTotalChars: int(env.LIMIT_HISTORY_TOTAL_CHARS, 10_000, 500, 40_000),
     maxBodyBytes: int(env.LIMIT_BODY_BYTES, 400_000, 10_000, 5_000_000),
   };
 }

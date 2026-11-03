@@ -17,7 +17,6 @@ import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
 import { CancelBooking } from "./CancelBooking";
-import { askedFrom, isBareCancel, looksLikeBookingTalk } from "@/lib/bookingIntent";
 import { slimHistory } from "@/lib/chatHistory";
 import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
@@ -148,7 +147,7 @@ export function Chat({
   const chatDl = useChat({ id: `${baseId ?? "init"}-dl`, transport: transportDl });
   const chatDn = useChat({ id: `${baseId ?? "init"}-dn`, transport: transportDn });
   const dining = service.type === "dine-in";
-  const { messages, sendMessage, status, error } = dining ? chatDn : chatDl;
+  const { messages, sendMessage, status, error, stop } = dining ? chatDn : chatDl;
   const sessionId = sessionIdFor(dining ? "dn" : "dl");
   const busy = status === "submitted" || status === "streaming";
 
@@ -178,22 +177,39 @@ export function Chat({
   // Dining food can only be ordered once a table is booked (the server enforces this too).
   const locked = chosen && service.type === "dine-in" && !bookings.some((b) => b.id === service.bookingId);
 
+  // A message is never silently dropped: if the waiter is still answering the last one, it is held and sent the moment that
+  // finishes. (The server decides what a message means; before a table exists in Dining it only accepts table talk.)
+  const [queued, setQueued] = useState<string | null>(null);
   const send = (text: string) => {
-    if (!sessionId || busy || !text.trim()) return;
-    // Before a table exists, dining shows no menu: only the table-booking conversation (and its answers) may go through.
-    const lastMsg = messages[messages.length - 1];
-    // Still booking talk: the waiter just asked a booking question, or just showed a booking result/time buttons ("cancel it").
-    const inBookingTalk =
-      lastMsg?.role === "assistant" &&
-      (askedFrom(lastMsg.parts.map((p) => (p.type === "text" ? p.text : "")).join("")) !== null ||
-        (isBareCancel(text) && lastMsg.parts.some((p) => isToolUIPart(p) && getToolName(p) === "booking_done")));
-    if (locked && !looksLikeBookingTalk(text) && !inBookingTalk) {
-      setBlockedNote("Book a table first, then you can order food for it. Try: “Book a table for 4 tomorrow at 8 pm”.");
+    if (!sessionId || !text.trim()) return;
+    setBlockedNote("");
+    if (busy) {
+      setQueued(text);
       return;
     }
-    setBlockedNote("");
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
+
+  useEffect(() => {
+    if (busy || queued === null) return;
+    const q = queued;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQueued(null);
+    sendMessage({ text: q }, { body: { service } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy, queued]);
+
+  // A reply that has not come back after a long time (a slow network hop) is abandoned, so the chat is never stuck.
+  useEffect(() => {
+    if (!busy) return;
+    const t = setTimeout(() => {
+      stop();
+      setQueued(null);
+      setBlockedNote("That took longer than expected, so I stopped waiting. Please say it again.");
+    }, 40_000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   // Voice: speak your question; the words appear in the box as you talk and are sent when you finish.
   const voice = useVoiceInput({
@@ -318,9 +334,10 @@ export function Chat({
                   {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
                 </p>
               )}
-              {blockedNote && (
+              {(blockedNote || queued || error) && (
                 <p role="status" className="mt-2 text-sm text-muted">
-                  {blockedNote}
+                  {blockedNote ||
+                    (queued ? "Sending that as soon as the waiter is free…" : /booking-required/.test(error?.message ?? "") ? "Book a table first, then you can order food for it. Tell me when and for how many." : "Something went wrong. Please try again.")}
                 </p>
               )}
               <form
@@ -575,6 +592,11 @@ export function Chat({
               Send
             </button>
           </form>
+          {(blockedNote || queued) && (
+            <p role="status" className="mt-2 text-center text-sm text-muted">
+              {blockedNote || "Sending that as soon as the waiter is free…"}
+            </p>
+          )}
           <p className="mt-2 text-center text-xs text-muted">AI waiter — answers can be wrong. Please confirm allergies with the restaurant.</p>
         </section>
 

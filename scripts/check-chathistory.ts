@@ -46,7 +46,7 @@ const tool = (name: string, output: unknown) => ({ type: `tool-${name}`, toolCal
   check("after a made booking, 'cancel it' is a booking cancel", resolveBookingRequest(["cancel it"], null, "2026-11-03", true)?.kind === "cancel");
 
   // the history window is wider than before
-  check("the history window is 30 messages and the text budget is wider", HISTORY_MESSAGES === 30 && getLimits().maxHistoryTotalChars >= 8000 && getLimits().maxHistoryMsgChars >= 800);
+  check("the history window is 40 messages and the text budget is wider", HISTORY_MESSAGES === 40 && getLimits().maxHistoryTotalChars >= 10000 && getLimits().maxHistoryMsgChars >= 800);
 
   console.log(fails === 0 ? "\nAll chat history checks passed" : `\n${fails} FAILED`);
   process.exit(fails === 0 ? 0 : 1);

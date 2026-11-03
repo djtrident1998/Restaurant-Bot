@@ -59,7 +59,7 @@ async function bookReply(deps: { bookings: BookingStore; users: UserStore }, use
   if (!date || party === undefined) {
     const need = [party === undefined ? "how many people" : "", !date ? "which day" : "", time ? "" : "what time"].filter(Boolean);
     return {
-      text: `Sure. ${BOOKING_ASK_MARKER[0].toUpperCase()}${BOOKING_ASK_MARKER.slice(1)}, I just need ${need.join(", ").replace(/, ([^,]*)$/, " and $1")} (we seat at ${SEATING_HOURS}). For example: "4 people tomorrow at 8 pm".`,
+      text: `Sure! ${BOOKING_ASK_MARKER[0].toUpperCase()}${BOOKING_ASK_MARKER.slice(1)}, I just need ${need.join(", ").replace(/, ([^,]*)$/, " and $1")}. Tell me in your own words (we seat at ${SEATING_HOURS}).`,
       outputs: [],
     };
   }
@@ -87,6 +87,17 @@ async function bookReply(deps: { bookings: BookingStore; users: UserStore }, use
 
   const slot = a.slots.find((s) => s.time === time);
   if (slot?.available) {
+    // Already holding a table at (or overlapping) that time? Say exactly which one, instead of a bare "clash" error.
+    const overlap = upcoming.find((b) => b.date === date && Math.abs(mins(b.time) - mins(time)) * 60_000 < BOOKING.durationMin * 60_000);
+    if (overlap) {
+      const same = overlap.time === time;
+      return {
+        text: same
+          ? `You already have a table booked for **${when(overlap)}** (${people(overlap.party)}, table ${overlap.table}, reference ${overlap.id}). I haven't booked another. To change it, say "cancel my booking" and then tell me the new time.`
+          : `You already have a table at **${when(overlap)}** (${people(overlap.party)}, reference ${overlap.id}), which overlaps ${formatTime(time)}: a table is held for ${BOOKING.durationMin} minutes. To move it, say "cancel my booking" and then tell me the new time.`,
+        outputs: [],
+      };
+    }
     if (!checkWindow(`book:${user.id}`, 10, 10 * 60_000, now)) return { text: TOO_MANY, outputs: [] };
     // Everything needed was said: book it now (the booking service re-checks capacity, clashes and the limit atomically).
     const r = await createBooking(deps.bookings, deps.users, user, { date, time, party, notes: "" }, now);
