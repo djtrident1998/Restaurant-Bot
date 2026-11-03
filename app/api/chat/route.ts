@@ -12,7 +12,11 @@ import { getCurrentAccount, getCurrentUser } from "@/lib/auth/session";
 import { BOOKING_REQUIRED_MESSAGE, needsBooking, parseService, validateService } from "@/lib/service";
 import { getStore } from "@/lib/auth/store";
 import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
-import { checkRateLimit } from "@/lib/ratelimit";
+import { checkRateLimit, checkWindow } from "@/lib/ratelimit";
+import { askedFrom, resolveBookingRequest } from "@/lib/bookingIntent";
+import { handleBookingRequest } from "@/lib/bookingChat";
+import { getBookingStore } from "@/lib/bookings/store";
+import { todayLocal } from "@/lib/booking";
 import { COURSE_ASK_TEXT, courseOutputs, detectMenuIntent } from "@/lib/course";
 import { detectOrderIntent, handleOrderIntent, type StaticOutput } from "@/lib/orderFlow";
 
@@ -89,6 +93,18 @@ export async function POST(req: Request) {
   // Guardrail: deterministic scope/injection gate before the model sees anything.
   const gate = checkUserInput(userText);
   if (!gate.ok) return staticReply(gate.reply);
+
+  // Booking and cancelling a table by chat or voice is answered by code (never the AI) and works in every mode, including
+  // Dining before a table exists. It only prepares the action: the customer confirms with a button (or says "yes").
+  const userTexts = messages.filter((m) => m.role === "user").map(textOf);
+  const lastUserAt = messages.lastIndexOf(lastUser as UIMessage);
+  const prevAssistant = messages.slice(0, Math.max(lastUserAt, 0)).reverse().find((m) => m.role === "assistant");
+  const bookingReq = resolveBookingRequest(userTexts, askedFrom(textOf(prevAssistant)), todayLocal());
+  if (bookingReq) {
+    if (!checkWindow(`chatbook:${ip}`, 40, 10 * 60_000)) return staticReply("You're asking about tables very quickly. Please wait a few minutes and try again, or use the Book a table page.");
+    const r = await handleBookingRequest({ bookings: getBookingStore(), users: getStore() }, (await getCurrentUser()) ?? undefined, bookingReq);
+    return staticReply(r.text, r.outputs);
+  }
 
   // Dining food is ordered only AFTER a table is booked: no menu, cart or checkout for a dining selection without one.
   // (The booking must be one of THIS customer's own upcoming ones; only a dining request needs the account read here.)

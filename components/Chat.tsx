@@ -17,6 +17,8 @@ import type { MenuCardItem } from "./MenuCard";
 import { hasProfile, profileSummary, type Profile } from "@/lib/profile";
 import { ServiceBar } from "./ServiceBar";
 import { CancelBooking } from "./CancelBooking";
+import { BOOKING_CONFIRM_EVENT, BOOKING_DISMISS_EVENT, BOOKING_SETTLED_EVENT } from "./BookingChatCards";
+import { askedFrom, interpretBookingReply, looksLikeBookingTalk } from "@/lib/bookingIntent";
 import { withNext } from "@/lib/auth/next";
 import { StartChoice } from "./StartChoice";
 import { formatDate, formatTime, type BookingRef } from "@/lib/booking";
@@ -159,8 +161,20 @@ export function Chat({
   // Dining food can only be ordered once a table is booked (the server enforces this too).
   const locked = chosen && service.type === "dine-in" && !bookings.some((b) => b.id === service.bookingId);
 
+  const [settled, setSettled] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    // A booking card that finished (booked, cancelled, dismissed or refused) is no longer waiting for a "yes".
+    const on = (e: Event) => setSettled((s) => new Set(s).add((e as CustomEvent<{ key: string }>).detail.key));
+    window.addEventListener(BOOKING_SETTLED_EVENT, on);
+    return () => window.removeEventListener(BOOKING_SETTLED_EVENT, on);
+  }, []);
+
   const send = (text: string) => {
-    if (!sessionId || busy || locked || !text.trim()) return;
+    if (!sessionId || busy || !text.trim()) return;
+    // Before a table exists, dining shows no menu: only the table-booking conversation (and its answers) may go through.
+    const lastMsg = messages[messages.length - 1];
+    const inBookingTalk = lastMsg?.role === "assistant" && askedFrom(lastMsg.parts.map((p) => (p.type === "text" ? p.text : "")).join("")) !== null;
+    if (locked && !looksLikeBookingTalk(text) && !inBookingTalk) return;
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
 
@@ -214,7 +228,23 @@ export function Chat({
   // Spoken or typed ordering commands act like the buttons: "place order" starts checkout; after the read-back,
   // "yes"/"confirm" confirms and "no"/"change" goes back. The server still requires a signed-in session and a
   // recorded confirmation, and the AI can never confirm.
+  // A booking or cancel offer waiting for the customer (the latest card in the last waiter message, not yet settled).
+  const pendingBooking = useMemo(() => {
+    if (!last || last.role !== "assistant" || busy) return null;
+    const cards = last.parts.filter(isToolUIPart).filter((p) => p.state === "output-available" && ["booking_offer", "booking_cancel_offer"].includes(getToolName(p)));
+    if (cards.length === 0) return null;
+    const first = cards[0];
+    const kind = getToolName(first) === "booking_offer" ? ("book" as const) : ("cancel" as const);
+    if (kind === "cancel" && cards.length > 1) return null; // several bookings on offer: the customer taps the one they mean
+    return settled.has(first.toolCallId) ? null : { key: first.toolCallId, kind };
+  }, [last, busy, settled]);
+
   const handleUserText = (text: string) => {
+    if (pendingBooking) {
+      const reply = interpretBookingReply(text, pendingBooking.kind);
+      if (reply === "yes") return void window.dispatchEvent(new CustomEvent(BOOKING_CONFIRM_EVENT, { detail: { key: pendingBooking.key } }));
+      if (reply === "no") return void window.dispatchEvent(new CustomEvent(BOOKING_DISMISS_EVENT, { detail: { key: pendingBooking.key } }));
+    }
     const cmd = interpretCommand(text, { awaitingConfirm });
     if (cmd === "confirm") return void confirmOrder();
     if (cmd === "change") return send("No, I want to change something");
@@ -272,6 +302,58 @@ export function Chat({
               </div>
             )}
           </div>
+
+          {signedIn && (
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-ivory">Or just tell the waiter</p>
+              <p className="text-xs text-muted">Type or tap the microphone, for example “Book a table for 4 tomorrow at 8 pm” or “Cancel my booking”.</p>
+              {messages.length > 0 && (
+                <div className="mt-3">
+                  <MessageList messages={messages} busy={busy} onAdd={() => undefined} onSend={send} profile={profile} />
+                </div>
+              )}
+              {(voice.listening || voice.error) && (
+                <p role="status" className={`mt-2 text-sm ${voice.error ? "text-red-600" : "text-gold-soft"}`}>
+                  {voice.error || "Listening… speak now, then pause. Tap the microphone again to stop."}
+                </p>
+              )}
+              <form
+                className="mt-2 flex gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (voice.listening) voice.stop();
+                  handleUserText(input);
+                  setInput("");
+                }}
+              >
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={voice.listening ? "Listening…" : "Book a table for 4 tomorrow at 8 pm"}
+                  maxLength={400}
+                  aria-label="Tell the waiter about your table"
+                  className="min-w-0 flex-1 rounded-full border border-line bg-panel2 px-4 py-2.5 text-base text-ivory outline-none placeholder:text-muted/70 focus:border-gold focus:bg-panel"
+                />
+                <button
+                  type="button"
+                  onClick={voice.listening ? voice.stop : voice.start}
+                  disabled={busy || !sessionId}
+                  aria-pressed={voice.listening}
+                  aria-label={voice.listening ? "Stop listening" : "Speak your request"}
+                  className={`btn-ghost flex h-11 w-11 shrink-0 items-center justify-center ${voice.listening ? "mic-listening" : "text-gold-soft"} ${!voice.supported ? "opacity-50" : ""}`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0" />
+                    <path d="M12 18v3" />
+                  </svg>
+                </button>
+                <button type="submit" disabled={busy || !sessionId || !input.trim()} className="btn-gold px-5 py-2.5 text-sm">
+                  Send
+                </button>
+              </form>
+            </div>
+          )}
         </section>
       </div>
     );
@@ -408,7 +490,7 @@ export function Chat({
               </div>
             )}
             <div className="mt-3">
-              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} profile={profile} />
+              <MessageList messages={messages} busy={busy} onAdd={(it: MenuCardItem, qty: number) => send(addRequestText(it.name, qty))} onSend={send} profile={profile} />
             </div>
             {error && <p className="mt-3 text-sm text-red-600">The demo is busy or has hit its usage limit. Please wait a minute and try again.</p>}
             <div ref={bottomRef} />
