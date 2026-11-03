@@ -10,7 +10,7 @@ export interface BookingFields {
   party?: number;
 }
 /** `id` (cancel only) is set by the server when the waiter's last message was a booking just made: "cancel it" means that one. */
-export type BookingRequest = ({ kind: "book" } & BookingFields) | ({ kind: "cancel"; id?: string } & Pick<BookingFields, "date" | "time">);
+export type BookingRequest = ({ kind: "book"; /** set by the server when the words say "instead / change / move": replace the overlapping booking */ move?: boolean } & BookingFields) | ({ kind: "cancel"; id?: string } & Pick<BookingFields, "date" | "time">);
 
 /** Phrases the waiter uses when it needs more detail; the next message is then read as an answer. */
 export const BOOKING_ASK_MARKER = "to book your table";

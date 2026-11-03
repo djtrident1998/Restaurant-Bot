@@ -121,6 +121,7 @@ export async function POST(req: Request) {
   });
   if (understood && understood.kind !== "cancel_order") {
     if (!checkWindow(`chatbook:${ip}`, 40, 10 * 60_000)) return staticReply("You're asking about tables very quickly. Please wait a few minutes and try again, or use the Book a table page.");
+    if (understood.kind === "book" && /\b(instead|change|move|shift|switch|reschedule|make it|push it|rather)\b/i.test(userText)) understood.move = true;
     if (understood.kind === "cancel" && justBooked?.booking?.id && !understood.id && !understood.date && !understood.time) understood.id = justBooked.booking.id;
     const r = await handleBookingRequest({ bookings: getBookingStore(), users: getStore() }, (await getCurrentUser()) ?? undefined, understood);
     return staticReply(r.text, r.outputs);

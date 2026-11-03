@@ -181,23 +181,23 @@ export function Chat({
   // finishes. (The server decides what a message means; before a table exists in Dining it only accepts table talk.)
   const [queued, setQueued] = useState<string | null>(null);
   const send = (text: string) => {
-    if (!sessionId || !text.trim()) return;
+    if (!text.trim()) return;
     setBlockedNote("");
-    if (busy) {
-      setQueued(text);
+    if (busy || !sessionId) {
+      setQueued(text); // also held while the page is still setting up, so a first message is never lost
       return;
     }
     sendMessage({ text }, { body: { service } }); // the Delivery / Dining choice travels with the message
   };
 
   useEffect(() => {
-    if (busy || queued === null) return;
+    if (busy || !sessionId || queued === null) return;
     const q = queued;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setQueued(null);
     sendMessage({ text: q }, { body: { service } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busy, queued]);
+  }, [busy, queued, sessionId]);
 
   // A reply that has not come back after a long time (a slow network hop) is abandoned, so the chat is never stuck.
   useEffect(() => {

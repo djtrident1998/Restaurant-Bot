@@ -95,7 +95,7 @@ async function run(text: string, opts: { reply?: unknown; prev?: string; det?: U
   const asha = await mk("asha-ai@example.com");
   const A = { id: asha.id, name: asha.name };
   const inj = requestFromExtract(raw({ action: "book", date: "2026-11-05", time: "20:00", party: 99 }), mine, orders, NOW);
-  const injReply = inj ? await handleBookingRequest({ bookings, users }, A, inj, NOW) : null;
+  const injReply = inj && inj.kind !== "cancel_order" ? await handleBookingRequest({ bookings, users }, A, inj, NOW) : null;
   check("an extracted party of 99 is refused by the booking rules (nothing booked)", !!injReply && /1 to 8/.test(injReply.text) && (await bookings.read("2026-11-05")).length === 0);
 
   // the user's own example, end to end through the real booking service
@@ -105,6 +105,11 @@ async function run(text: string, opts: { reply?: unknown; prev?: string; det?: U
   check("asking again explains the existing booking instead of a bare error", /already have a table booked for/.test(dup.text) && dup.outputs.length === 0);
   const overlap = await handleBookingRequest({ bookings, users }, A, { kind: "book", date: TODAY, time: "20:30", party: 2 }, NOW);
   check("an overlapping time names the booking and how to move it", /overlaps/.test(overlap.text) && /cancel my booking/.test(overlap.text) && !/bare/.test(overlap.text));
+  const moved = await handleBookingRequest({ bookings, users }, A, { kind: "book", date: TODAY, time: "21:00", party: 4, move: true }, NOW);
+  const todays = (await bookings.read(TODAY)).filter((b) => b.userId === asha.id);
+  check("'make it 9 instead' moves the booking: old one cancelled, new one confirmed", /moved your table/.test(moved.text) && moved.outputs[0]?.toolName === "booking_done" && todays.filter((b) => b.status === "confirmed").length === 1 && todays.find((b) => b.status === "confirmed")?.time === "21:00" && todays.some((b) => b.time === "20:00" && b.status === "cancelled"));
+  const upc = ((await users.findById(asha.id))?.bookings ?? []).filter((b) => b.status === "confirmed");
+  check("the account lists exactly the new booking", upc.length === 1 && upc[0].time === "21:00");
   void createBooking;
 
   // ---------- the prompt carries what the model needs, and no secrets ----------

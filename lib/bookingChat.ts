@@ -89,6 +89,21 @@ async function bookReply(deps: { bookings: BookingStore; users: UserStore }, use
   if (slot?.available) {
     // Already holding a table at (or overlapping) that time? Say exactly which one, instead of a bare "clash" error.
     const overlap = upcoming.find((b) => b.date === date && Math.abs(mins(b.time) - mins(time)) * 60_000 < BOOKING.durationMin * 60_000);
+    if (overlap && req.move && overlap.time !== time) {
+      // "make it 9 instead": move the booking. Cancel the old table, book the new one; if the new one can't be had, put the old one back.
+      if (!checkWindow(`book:${user.id}`, 10, 10 * 60_000, now)) return { text: TOO_MANY, outputs: [] };
+      const cancelled = await cancelBooking(deps.bookings, deps.users, user.id, overlap.id, now);
+      if (!cancelled.ok) return { text: `I couldn't move your booking: ${cancelled.error}`, outputs: [] };
+      const moved = await createBooking(deps.bookings, deps.users, user, { date, time, party, notes: "" }, now);
+      if (!moved.ok) {
+        await createBooking(deps.bookings, deps.users, user, { date: overlap.date, time: overlap.time, party: overlap.party, notes: "" }, now);
+        return { text: `I couldn't move it to ${formatTime(time)} (${moved.error}). Your original booking for ${when(overlap)} is kept.`, outputs: [] };
+      }
+      return {
+        text: `Done! I moved your table for **${people(party)}** from ${formatTime(overlap.time)} to **${when(moved.booking)}** (table ${moved.booking.table}, reference ${moved.booking.id}).`,
+        outputs: [{ toolName: "booking_done", input: { date, time, party }, output: { ok: true, booking: moved.booking } }],
+      };
+    }
     if (overlap) {
       const same = overlap.time === time;
       return {

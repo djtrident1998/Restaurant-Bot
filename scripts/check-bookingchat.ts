@@ -127,7 +127,7 @@ const R = (texts: string[], asked: "book" | "cancel" | null = null) => resolveBo
   const stored = (await users.findById(asha.id))?.bookings ?? [];
   check("the booking is also on the customer's account", stored.some((b) => b.id === doneBooking?.id && b.status === "confirmed"));
   const clash = await ask({ kind: "book", date: "2026-11-07", time: "20:30", party: 2 });
-  check("the booking rules still apply: a clashing booking is refused with the reason", clash.outputs.length === 0 && /around that time/i.test(clash.text) && (await mine("2026-11-07")).length === 1);
+  check("the booking rules still apply: a clashing booking is refused with the reason", clash.outputs.length === 0 && /already have a table/i.test(clash.text) && /cancel my booking/i.test(clash.text) && (await mine("2026-11-07")).length === 1);
 
   // cancelling
   const nothing = await ask({ kind: "cancel" }, { id: userIdFor("nobody-bc@example.com"), name: "Nobody" });
