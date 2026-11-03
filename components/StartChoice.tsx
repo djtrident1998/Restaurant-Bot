@@ -31,7 +31,7 @@ export function StartChoice({ onPick }: { onPick: (type: ServiceType) => void })
             🍽
           </span>
           <span className="font-display mt-2 block text-xl text-ivory">Dining</span>
-          <span className="mt-1 block text-sm text-muted">Eat at the restaurant. Book a table, and pre-order so your food is ready.</span>
+          <span className="mt-1 block text-sm text-muted">Eat at the restaurant. Book a table first, then pre-order so your food is ready.</span>
           <span className="mt-3 inline-block text-sm font-bold text-gold-soft group-hover:underline">Choose dining →</span>
         </button>
       </div>

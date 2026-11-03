@@ -5,7 +5,7 @@ import { __testing as bookingTesting } from "../lib/bookings/store";
 import { __testing as userTesting, userIdFor, type UserRecord } from "../lib/auth/store";
 import { hashPassword } from "../lib/auth/password";
 import { deleteAccount } from "../lib/account";
-import { DEFAULT_SERVICE, parseService, serviceLabel, serviceShort, validateService } from "../lib/service";
+import { DEFAULT_SERVICE, needsBooking, parseService, serviceLabel, serviceShort, validateService } from "../lib/service";
 import { getService, setService, userConfirm, isUserConfirmed, addLine, checkout, snapshotSession, restoreSession, viewCart, getOrders, resetSession } from "../lib/cart";
 import { detectOrderIntent, handleOrderIntent } from "../lib/orderFlow";
 import { CHECKOUT_TEXT, CONFIRM_TEXT } from "../lib/chatMessages";
@@ -165,6 +165,9 @@ const mkDay = (rows: Partial<Booking>[]): Booking[] => rows.map((r, i) => ({ id:
   check("someone else's booking id is dropped (walk-in)", validateService({ type: "dine-in", bookingId: "BK-261105-999" }, refs, NOW).bookingId === undefined);
   check("a past booking is dropped", validateService({ type: "dine-in", bookingId: "BK-261101-111" }, refs, NOW).bookingId === undefined);
   check("a guest can't attach a booking", validateService({ type: "dine-in", bookingId: "BK-261105-482" }, undefined, NOW).bookingId === undefined);
+  check("dining needs a booked table before food can be ordered", needsBooking({ type: "dine-in" }) && !needsBooking({ type: "dine-in", bookingId: "BK-261105-482" }) && !needsBooking({ type: "delivery" }));
+  check("a stranger's or past booking leaves dining locked", needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-999" }, refs, NOW)) && needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-482" }, undefined, NOW)));
+  check("an own upcoming booking unlocks dining", !needsBooking(validateService({ type: "dine-in", bookingId: "BK-261105-482" }, refs, NOW)));
   check("labels", serviceLabel({ type: "delivery" }) === "Delivery" && serviceLabel({ type: "dine-in" }) === "Dining — walk-in" && /table booked.*7:30 pm.*T5/.test(serviceLabel({ type: "dine-in", bookingId: "BK-261105-482" }, refs)));
   check("short labels", serviceShort({ type: "delivery" }) === "Delivery" && serviceShort({ type: "dine-in" }) === "Dine in" && serviceShort(undefined) === "");
 

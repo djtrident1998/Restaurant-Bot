@@ -48,7 +48,7 @@ export function ServiceBar({ service, onChange, bookings, signedIn }: { service:
               <Link href="/login" className="font-semibold text-gold-soft underline-offset-4 hover:underline">
                 Sign in
               </Link>{" "}
-              to book a table or place a dining order.
+              to book a table. Once it&apos;s booked, you can pre-order your food.
             </p>
           ) : (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -59,7 +59,9 @@ export function ServiceBar({ service, onChange, bookings, signedIn }: { service:
                   onChange={(e) => onChange({ type: "dine-in", bookingId: e.target.value || undefined })}
                   className="min-w-0 flex-1 rounded-lg border border-line bg-panel2 px-2 py-2 text-base text-ivory"
                 >
-                  <option value="">Walk-in (no booking)</option>
+                  <option value="" disabled>
+                    Choose your booking…
+                  </option>
                   {bookings.map((b) => (
                     <option key={b.id} value={b.id}>
                       {formatDate(b.date)} · {formatTime(b.time)} · party of {b.party}

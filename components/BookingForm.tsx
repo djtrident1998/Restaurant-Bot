@@ -95,7 +95,7 @@ export function BookingForm({
           Booking <span className="font-mono font-semibold text-ivory">{done.id}</span>. Free cancellation until {BOOKING.cancelCutoffMin / 60} hours before. We hold your table for {BOOKING.holdMin} minutes after your booking time.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Link href="/order?mode=dining" className="btn-gold px-6 py-3 text-sm">
+          <Link href={`/order?mode=dining&booking=${done.id}`} className="btn-gold px-6 py-3 text-sm">
             Pre-order your food
           </Link>
           <AddToCalendar booking={done} />

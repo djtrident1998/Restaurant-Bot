@@ -9,7 +9,7 @@ import { takeDaily } from "@/lib/budget";
 import { checkGrounding, checkUserInput, collectToolAmounts } from "@/lib/guardrails";
 import { beginTurn, getOrders, restoreSession, setService, snapshotSession, userConfirm, viewCart } from "@/lib/cart";
 import { getCurrentAccount, getCurrentUser } from "@/lib/auth/session";
-import { parseService, validateService } from "@/lib/service";
+import { BOOKING_REQUIRED_MESSAGE, needsBooking, parseService, validateService } from "@/lib/service";
 import { getStore } from "@/lib/auth/store";
 import { detectCancelIntent, handleCancelIntent } from "@/lib/cancel";
 import { checkRateLimit } from "@/lib/ratelimit";
@@ -90,6 +90,12 @@ export async function POST(req: Request) {
   const gate = checkUserInput(userText);
   if (!gate.ok) return staticReply(gate.reply);
 
+  // Dining food is ordered only AFTER a table is booked: no menu, cart or checkout for a dining selection without one.
+  // (The booking must be one of THIS customer's own upcoming ones; only a dining request needs the account read here.)
+  const wanted = parseService(body.service);
+  if (wanted.type === "dine-in" && needsBooking(validateService(wanted, (await getCurrentAccount())?.bookings)))
+    return Response.json({ error: BOOKING_REQUIRED_MESSAGE, code: "booking-required" }, { status: 403 });
+
   // Menu browsing is deterministic and free: "show me the menu" asks which course; a course button shows its dishes
   // (built straight from menu.json). No model call, so it is instant and uses none of the AI quota.
   const intent = detectMenuIntent(userText);
@@ -105,7 +111,7 @@ export async function POST(req: Request) {
 
   // Delivery or Dining, as selected in the browser. It is validated here: a table booking can only be attached if it is
   // one of THIS customer's own upcoming bookings (never trusted from the browser), otherwise the order is a walk-in.
-  setService(sessionId, validateService(parseService(body.service), account?.bookings));
+  setService(sessionId, validateService(wanted, account?.bookings));
 
   const orderIntent = detectOrderIntent(userText);
   if (orderIntent) {

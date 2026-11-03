@@ -102,9 +102,7 @@ export function HeroChoice() {
               <Link href={`/book?${params.toString()}`} className="btn-gold px-8 py-3 text-center text-base">
                 Find a table
               </Link>
-              <Link href="/order?mode=dining" className="py-2 text-center text-sm font-semibold text-white underline-offset-4 hover:underline sm:text-left">
-                Or pre-order dine-in with our AI waiter →
-              </Link>
+              <p className="text-center text-sm text-white/80 sm:text-left">Book first, then pre-order your food.</p>
             </div>
           </div>
         )}

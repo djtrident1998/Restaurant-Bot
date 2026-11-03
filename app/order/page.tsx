@@ -6,12 +6,12 @@ import { getCurrentAccount } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Order with the AI waiter", description: "Ask for what you fancy by chat or voice, add dishes to your cart and place your order. Every price comes from the real menu." };
 
-export default async function OrderPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
+export default async function OrderPage({ searchParams }: { searchParams: Promise<{ mode?: string; booking?: string }> }) {
   // One account read for the whole page (the header reuses it). If storage is briefly unavailable the page still
   // opens, just without the personal bits, instead of showing an error screen.
   const account = await getCurrentAccount();
   const user = account?.user;
-  const { mode } = await searchParams;
+  const { mode, booking } = await searchParams;
 
   // A returning customer is shown their most recent order.
   const latest = [...(account?.orders ?? [])].sort((a, b) => b.placedAt - a.placedAt)[0];
@@ -33,6 +33,7 @@ export default async function OrderPage({ searchParams }: { searchParams: Promis
           profile={user?.profile}
           bookings={bookings}
           initialMode={mode === "dining" ? "dine-in" : mode === "delivery" ? "delivery" : undefined}
+          initialBookingId={mode === "dining" ? bookings.find((b) => b.id === (booking ?? "").toUpperCase())?.id : undefined}
         />
       </main>
     </div>
